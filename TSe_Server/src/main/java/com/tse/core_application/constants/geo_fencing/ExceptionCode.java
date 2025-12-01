@@ -1,0 +1,22 @@
+package com.tse.core_application.constants.geo_fencing;
+
+public enum ExceptionCode {
+    MISSING_CHECKOUT,
+    DUP_CHECKIN,
+    FAILED_PUNCH,
+    OUTSIDE_FENCE,
+    LOW_ACCURACY,
+    CAP_REACHED,
+    UNDER_PUNCHED,
+    MAX_HOURS,
+    INTEGRITY_WARN,
+    GRACE_EXPIRED,
+    LATE_CHECKIN,
+    BEFORE_CHECKOUT,
+    HOLIDAY_CHECKIN,
+    HOLIDAY_CHECKOUT,
+    MISSING_CHECKIN,
+    ALREADY_ON_BREAK,
+    NOT_ON_BREAK,
+    OUTSIDE_OFFICE_HOURS
+}

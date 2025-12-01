@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="ERROR" packages="org.apache.logging.log4j.core">
+
+    <Properties>
+        <!--        <Property name="log-dir">D:\Programs</Property>-->
+    </Properties>
+
+    <Appenders>
+        <!--        <RollingFile name="ErrorFile" fileName="${log-dir}/tse_error.log"-->
+        <!--                     filePattern="${log-dir}/error-%d{yyyy-MM-dd}.log.gz">-->
+        <!--            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss,SSS} %-5level [%t] %c{2} - %m %ex{full}%n" />-->
+        <!--            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY" />-->
+        <!--            <Policies>-->
+        <!--                <TimeBasedTriggeringPolicy />-->
+        <!--            </Policies>-->
+        <!--        </RollingFile>-->
+        <!--        printing logs in console    -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"/>
+        </Console>
+
+        <!--        persisting info logs in info_tables    -->
+        <Jdbc name="info_log" tableName="tse.info_log">
+            <DriverManager
+                    connectionString="jdbc:postgresql://localhost:5432/db_tse"
+                    driverClassName="org.postgresql.Driver"
+                    username="postgres"
+                    password="vijayi wfh"/>
+            <Column name="user_id" pattern="%X{userId}" isUnicode="false"/>
+            <Column name="account_id" pattern="%X{accountId}" isUnicode="false"/>
+            <Column name="category" literal="1"/>
+            <Column name="message" pattern="%m" isUnicode="false"/>
+            <Column name="class" pattern="%C" isUnicode="false"/>
+            <Column name="level" pattern="%p" isUnicode="false"/>
+            <Column name="created_date_time" isEventTimestamp="true"/>
+            <Column name="request_originating_page" pattern="%X{requestOriginatingPage}" isUnicode="false"/>
+            <Column name="system_response_time" pattern="%X{systemResponseTime}" isUnicode="false"/>
+            <Column name="thread_name" pattern="%t" isUnicode="false"/>
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+        </Jdbc>
+
+        <!--        persisting error logs in error_table  -->
+        <Jdbc name="error_log" tableName="tse.error_log">
+            <DriverManager
+                    connectionString="jdbc:postgresql://localhost:5432/db_tse"
+                    driverClassName="org.postgresql.Driver"
+                    username="postgres"
+                    password="vijayi wfh"/>
+            <Column name="user_id" pattern="%X{userId}" isUnicode="false"/>
+            <Column name="account_id" pattern="%X{accountId}" isUnicode="false"/>
+            <Column name="class" pattern="%C" isUnicode="false"/>
+            <Column name="level" pattern="%p" isUnicode="false"/>
+            <Column name="created_date_time" isEventTimestamp="true"/>
+            <Column name="error_short_description" pattern="%m" isClob="false" isUnicode="false"/>
+            <Column name="error_long_description" pattern="%ex{100}" isClob="false" isUnicode="false"/>
+            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+        </Jdbc>
+    </Appenders>
+    <Loggers>
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="info_log"/>
+        </Root>
+        <Logger name="org.hibernate.type.descriptor.java" level="ERROR"/>
+        <Logger name="com.tse.core" level="ERROR" additivity="false">
+            <!--            <AppenderRef ref="ErrorFile" level="ERROR" />-->
+            <AppenderRef ref="error_log"/>
+        </Logger>
+    </Loggers>
+</Configuration>

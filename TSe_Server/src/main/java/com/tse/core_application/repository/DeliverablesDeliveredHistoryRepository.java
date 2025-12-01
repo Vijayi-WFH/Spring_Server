@@ -1,0 +1,9 @@
+package com.tse.core_application.repository;
+
+import com.tse.core_application.model.DeliverablesDeliveredHistory;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface DeliverablesDeliveredHistoryRepository extends JpaRepository<DeliverablesDeliveredHistory, Long> {
+}

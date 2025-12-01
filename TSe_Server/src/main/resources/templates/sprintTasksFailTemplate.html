@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Error in Sprint and Work Item Date Time</title>
+</head>
+<body>
+<p>Hello <span th:text="${firstName}">Name</span>,</p>
+<p>This is to inform you that dates of few tasks are greater than sprint dates or it's parent task dates : </p>
+<ul th:utext="${failedTasks}"></ul>
+
+
+<p>Please contact System Admin at <span href="mailto:rohit.nagpal@vijayi-wfh.com?subject=Inquiry for more details!">rohit.nagpal@vijayi-wfh.com</span> .</p>
+
+<p>Best Regards,<br>Vijayi WFH Team</p>
+</body>
+</html>

@@ -1,0 +1,550 @@
+swagger: "2.0"
+info:
+  description: "TSE server"
+  version: "1.0.0"
+  title: "TSE"
+  
+paths:
+  '/login':
+    post:
+      tags:
+        - Login 
+      summary: 'Get Token'
+      description: 'This endpoint provide token which is used for authentication'
+      operationId: Get token
+      produces:
+        - text/plain
+      parameters:
+         - in: body
+           description: Request Body
+           required: true
+           name: name
+           schema:
+             $ref: '#/definitions/TokenRequest' 
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/TokenResponse'
+        '401':
+          description: UNAUTHORIZED
+        '500':
+          description: INTERNAL SERVER ERROR
+
+  '/generateOtp':
+    post:
+      tags:
+        - Registration 
+      summary: 'User registration'
+      description: 'This endpoint generate random six digit OTP and send to the primary email-id'
+      operationId: User registration
+      produces:
+        - text/plain
+      parameters:
+         - in: body
+           description: Request Body
+           required: true
+           name: name
+           schema:
+             $ref: '#/definitions/RegistrationRequest'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/RegistrationResponse'
+        '401':
+          description: UNAUTHORIZED
+        '500':
+          description: INTERNAL SERVER ERROR   
+  
+  '/sendOtp':
+    post:
+      tags:
+        - Login 
+      summary: 'Send OTP to primary email-id'
+      description: 'This endpoint first check the if input email id is exist in our database or not. If it is exist then it will generate six digit OTP and send it to input email-id'
+      operationId: User registration
+      produces:
+        - application/json
+      parameters:
+         - in: body
+           description: Request Body
+           required: true
+           name: name
+           schema:
+             $ref: '#/definitions/SendOtpRequest'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/RegistrationResponse'
+        '401':
+          description: UNAUTHORIZED
+        '500':
+          description: INTERNAL SERVER ERROR             
+
+  '/signUp':
+    post:
+      tags:
+        - Registration 
+      summary: 'OTP verification and user registration'
+      description: 'This endpoint verifies the OTP and then insert the user detail into the database'
+      operationId: User registration
+      produces:
+        - application/json
+      parameters:
+         - in: body
+           description: Request Body
+           required: true
+           name: name
+           schema:
+             $ref: '#/definitions/RegistrationRequest'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/RegistrationResponse'
+        '401':
+          description: UNAUTHORIZED
+        '500':
+          description: INTERNAL SERVER ERROR
+
+  '/getTasks':
+    post:
+      tags:
+        - TaskMaster
+      summary: 'Gets tasks based on tasks filters passed'
+        description: 'This endpoint takes filters put in parameters definition and returns list of Tasks for those filters.'
+        operationId: Task Master
+        produces:
+          - application/json
+        parameters:
+          - in: body
+            description: Request Body
+            required: true
+            name: name
+            schema:
+              $ref: '#/definitions/TaskFilterRequest'
+        responses:
+          '200':
+            description: OK
+            schema:
+              $ref: '#/definitions/ArrayOfTask'
+          '401':
+            description: UNAUTHORIZED
+          '500':
+            description: INTERNAL SERVER ERROR
+
+  '/getFiltersForUser':
+    post:
+      tags:
+        - TaskMaster
+      summary: 'get filters for filters drop down'
+        description: 'Api for getting all filters i.e. projects, teams, organizations: for a User'
+        operationId: Filters for users
+        produces:
+          - application/json
+        parameters:
+          - in: body
+            description: Request Body
+            required: true
+            name: name
+            schema:
+              $ref: '#/definitions/AllFiltersRequest'
+        responses:
+          '200':
+            description: OK
+            schema:
+              $ref: '#/definitions/AllFiltersResponse'
+          '401':
+            description: UNAUTHORIZED
+          '500':
+            description: INTERNAL SERVER ERROR
+
+  '/getStatsV2':
+    post:
+      tags:
+        - TaskMaster
+      summary: 'get status of all tasks of user, with filters passed.'
+        description: 'get status of all tasks of user, with filters passed.'
+        operationId: Stats for users
+        produces:
+          - application/json
+        parameters:
+          - in: body
+            description: Request Body
+            required: true
+            name: name
+            schema:
+              $ref: '#/definitions/TaskFilterRequest'
+        responses:
+          '200':
+            description: OK
+            schema:
+              $ref: '#/definitions/StatsResponse'
+          '401':
+            description: UNAUTHORIZED
+          '500':
+            description: INTERNAL SERVER ERROR
+
+
+definitions: 
+    TokenRequest:
+        type: object
+        properties:
+          username:
+            type: string
+            description: username
+          password: 
+            type: string
+            description: password
+          deviceUniqueIdentifier: 
+            type: string
+            description: password  
+
+    SendOtpRequest:
+        type: object
+        properties:
+          username:
+            type: string
+            description: username
+          password: 
+            type: string
+            description: password            
+                   
+    TokenResponse:
+         type: object
+         properties:
+           headers:
+             type: object
+             description: headers
+           body: 
+             type: object
+             description: body
+           statusCode:
+             type: string
+             description:  statusCode
+           statusCodeValue: 
+             type: string
+             description:  statusCodeValue
+             
+    RegistrationRequest:
+        type: object
+        properties:
+          primaryEmail:
+            type: string
+            description: Primary email
+          isPrimaryEmailPersonal: 
+            type: string
+            description: isPrimaryEmailPersonal   
+          alternateEmail:
+            type: string
+            description: Alternate email
+          isAlternateEmailPersonal: 
+            type: string
+            description: isAlternateEmailPersonal  
+          givenName:
+            type: string
+            description: Given name
+          firstName: 
+            type: string
+            description: First name  
+          lastName:
+            type: string
+            description: Last name
+          middleName: 
+            type: string
+            description: Middle name  
+          locale:
+            type: string
+            description: locale
+          city: 
+            type: string
+            description: City 
+          highestEducation:
+            type: string
+            description: Highest education
+          secondHighestEducation: 
+            type: string
+            description: Second highest education        
+          gender: 
+            type: string
+            description: Gender 
+          ageRange: 
+            type: string
+            description: Age range 
+          deviceOs: 
+            type: string
+            description: Device OS
+          deviceOsVersion: 
+            type: string
+            description: Device OS version
+          deviceMake: 
+            type: string
+            description: Device make
+          deviceModel: 
+            type: string
+            description: Device model      
+          deviceUniqueIdentifier: 
+            type: string
+            description: Device unique identifier 
+          organizationName: 
+            type: string
+            description: Organization name 
+          otp: 
+            type: string
+            description: OTP           
+    RegistrationResponse:
+        type: string
+    SignUpResponse:
+      type: object
+        properties:
+          token:
+            type: string
+            description: JWT Auth token
+          error:
+            type: string
+            description: Error while signing up.
+  TaskFilterRequest:
+    type: object
+      properties:
+        userId:
+          type: integer
+          description: User Id
+        accountId:
+          type: integer
+          description: Account Id.
+        orgIds:
+          type:array
+          items:
+            type:integer
+          description: Array of Org Ids associated
+        accountIds:
+          type:array
+          items:
+            type:integer
+          description: Array of Account Ids associated
+        startDateForTaskActStartDate:
+          type:string
+          description: Start date from which tasks has to be picked
+        endDateForTaskExpEndDate:
+          type:string
+          description: End date till which tasks has to be picked
+        projectId:
+          type:integer
+          description: Project for which task has to be picked.
+        taskWorkflowId:
+          type:integer
+          description: Team workflow for which task has to be picked.
+        currentActivityIndicator:
+          type:integer
+        workflowTaskStatusId:
+          type:integer
+          description: Completion Status of task for which task to be fetched.
+
+
+  Task:
+    type: object
+      properties:
+        taskId:
+          type:integer
+        accountId:
+          type:integer
+        teamId:
+          type:integer
+        recordedEffort:
+          type:string
+        sprintId:
+          type:integer
+        taskTitle:
+          type:string
+        taskNum:
+          type:integer
+        taskDesc:
+          type:string
+        taskExpStartDate:
+          type:string
+        taskActStDate:
+          type:string
+        taskActEndDate:
+          type:string
+        taskActStTime:
+          type:string
+        taskActEndTime:
+          type:string
+        taskExpStartTime:
+          type:string
+        taskExpEndDate:
+          type:string
+        taskExpEndTime:
+          type:string
+        commentId:
+          type:integer
+        systemGeneratedExpectedEndTime:
+          type:string
+        taskCompletionDate:
+          type:string
+        taskCompletionTime:
+          type:string
+        taskWorkflowId:
+          type:integer
+        workflowTaskStatusId:
+          type:integer
+        taskEstimate:
+          type:integer
+        note:
+          type:string
+        parkingLot:
+          type:string
+        keyDecisions:
+          type:string
+        acceptanceCriteria:
+          type:string
+        parentTaskId:
+          type:string
+        taskProgressSystem:
+          type:string
+        taskProgressSystemLastUpdated:
+          type:string
+        taskProgressSetByUser:
+          type:string
+        taskProgressSetByAccountId:
+          type:integer
+        taskProgressSetByAccountIdLastUpdated:
+          type:integer
+        taskProgressSetByUserLastUpdated:
+          type:string
+        taskState:
+          type:string
+        taskPriority:
+          type:string
+        taskVersion:
+          type:integer
+        createdDateTime:
+          type:string
+        lastUpdatedDateTime:
+          type:string
+        taskDependency:
+          type:string
+        projectId:
+          type:integer
+        systemDerivedEndTs:
+          type:string
+        immediateAttention:
+          type:string
+        immediateAttentionFrom:
+          type:string
+        userPerceivedPercentageTaskCompleted:
+          type:integer
+        userPerceivedPercentageTaskEarnedValue:
+          type:integer
+        accountIdCreator:
+          type:integer
+        accountIdAssignee:
+          type:integer
+        accountIdAssigned:
+          type:integer
+        accountIdLastUpdated:
+          type:integer
+        accountIdMentor1:
+          type:integer
+        accountIdMentor2:
+          type:integer
+        accountIdObservor1:
+          type:integer
+        accountIdObservor2:
+          type:integer
+        accountIdPrevAssigned1:
+          type:integer
+        accountIdPrevAssigned2:
+          type:integer
+
+  ArrayOfTask:
+    type:array
+    items:
+      $ref: '#/definitions/Task'
+
+  AllFiltersRequest:
+      type: object
+      properties:
+        userId:
+          type:integer
+        filterFields:
+          type:array
+          items:
+            type:string
+            description: Fields to which all filters has to be retrieved like "organizationId","projectId","teamId"
+
+
+  AllFiltersResponse:
+      type:object
+        properties:
+          organizationId:
+            type:array
+            items:
+              type:object
+              properties:
+                id:
+                  type:integer
+                displayName:
+                  type:string
+
+          projectId:
+            type:array
+            items:
+              type:object
+              properties:
+                id:
+                  type:integer
+                displayName:
+                  type:string
+
+          teamId:
+            type:array
+            items:
+              type:object
+              properties:
+                id:
+                  type:integer
+                displayName:
+                  type:string
+
+  StatsResponse:
+          type: object
+          properties:
+            stats:
+              type:object
+              properties:
+                DELAYED:
+                  type:object
+                    properties:
+                      percent:
+                        type:number
+                      count:
+                        type:integer
+
+                WATCH_LIST:
+                  type:object
+                  properties:
+                    percent:
+                      type:number
+                    count:
+                      type:integer
+
+                ON_TRACK:
+                  type:object
+                  properties:
+                    percent:
+                      type:number
+                    count:
+                      type:integer
+
+                NOT_STARTED:
+                  type:object
+                  properties:
+                    percent:
+                      type:number
+                    count:
+                      type:integer
+
+

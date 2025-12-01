@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Invitation to Join</title>
+</head>
+<body>
+<p>Hello <span th:text="${firstName}">Name</span>,</p>
+<p>We are thrilled to extend an invitation for you to join <span th:text="${teamName}" style="font-weight: bold;">Team Name</span>. Here's your chance to be part of our team.</p>
+
+<!-- Invitation Button -->
+<a th:href="${inviteLink}" style="display: inline-block; padding: 10px 20px; margin: 10px 0; background-color: #007bff; color: white; text-align: center; text-decoration: none; border-radius: 5px; font-weight: bold; color: white !important;">
+    <span style="color: white !important;">Accept Invitation</span>
+</a>
+
+<p>If the above button doesn't work, please copy and paste the following link into your browser:</p>
+<p><a th:href="${inviteLink}" th:text="${inviteLink}">Invite Link</a></p>
+
+<p>Kindly be advised that this invitation holds validity for <span th:text="${validity}">validity</span> days.</p>
+<p>If you have any questions or need assistance, feel free to reach out to your Team admin.</p>
+<p>Looking forward to collaborating with you soon!</p>
+
+<p>Best Regards,<br><span th:text="${requester}">Requester</span></p>
+</body>
+</html>
+
+
+

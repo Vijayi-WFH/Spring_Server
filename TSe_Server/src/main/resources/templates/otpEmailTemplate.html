@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>OTP Verification</title>
+</head>
+<body>
+<p>Dear <span th:text="${firstName} + ' ' + ${lastName}">User</span>,</p>
+
+<p><strong th:text="${otp}">123456</strong> is the One Time Password (OTP).</p>
+
+<p>Note: This OTP is valid for 10 minutes only.</p>
+
+<p th:if="${envIndicator != null}" th:text="${envIndicator}" style="color: gray; font-style: italic;"></p>
+
+<p>Regards,<br/>Vijayi WFH Technologies Private Limited</p>
+</body>
+</html>

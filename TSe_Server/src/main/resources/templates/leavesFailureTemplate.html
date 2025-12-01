@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Monthly Leave Update Failure</title>
+</head>
+<body>
+<p>Hello <span th:text="${firstName}">Name</span>,</p>
+<p>This is to inform you that we were unable to update the monthly leaves quota for the following 23 employees : <span th:text="${accounts}" style="font-weight: bold;">accounts</span> of organization : <span th:text="${orgName}" style="font-weight: bold;">Organization Name</span></p>
+
+
+<p>Please contact System Admin at <span href="mailto:rohit.nagpal@vijayi-wfh.com?subject=Inquiry for monthly leave updates&body=Monthly leave update failed for few users in my organization!">rohit.nagpal@vijayi-wfh.com</span> .</p>
+
+<p>Best Regards,<br>Vijayi WFH Team</p>
+</body>
+</html>

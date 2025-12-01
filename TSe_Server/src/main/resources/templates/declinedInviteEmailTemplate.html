@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Invitation Declined</title>
+</head>
+<body>
+<p>Dear <span th:text="${orgAdminFirstName}">Admin</span>,</p>
+
+<p>
+    This is to inform you that <strong th:text="${declinedUserFullName}">User Name</strong> has declined the invitation to join the organization
+    <strong th:text="${organizationName}">Organization Name</strong>.
+</p>
+
+<p>
+    You may want to contact the user directly to clarify the reason for declining the invitation, or proceed to remove the user from your organization if appropriate.
+</p>
+
+<p>
+    If you need further assistance, please feel free to reach out to our support team.
+</p>
+
+<p>Regards,<br/>
+    Vijayi WFH Technologies Private Limited</p>
+</body>
+</html>

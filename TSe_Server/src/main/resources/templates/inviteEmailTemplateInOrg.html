@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Invitation to Join</title>
+</head>
+<body>
+<p>Hello <span th:text="${firstName}">Name</span>,</p>
+
+<p>
+    Please join <span th:text="${orgName}" style="font-weight: bold;">Organization Name</span>'s Workspace on <strong>WFHTSE App</strong>,
+    developed by <strong>Vijayi WFH Technologies</strong>, by clicking on the following link:
+</p>
+
+<!-- Invitation Button -->
+<a th:href="${inviteLink}" style="display: inline-block; padding: 10px 20px; margin: 10px 0; background-color: #007bff; color: white; text-align: center; text-decoration: none; border-radius: 5px; font-weight: bold; color: white !important;">
+    <span style="color: white !important;">Accept Invitation</span>
+</a>
+
+<p>If the above button doesn't work, please copy and paste the following link into your browser:</p>
+<p><a th:href="${inviteLink}" th:text="${inviteLink}">Invite Link</a></p>
+
+<p>Let us know if you face any issues while registering on the app.</p>
+
+<p>Best Regards,<br><span th:text="${orgName}">Organization</span></p>
+</body>
+</html>

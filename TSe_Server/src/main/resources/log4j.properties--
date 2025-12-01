@@ -1,0 +1,29 @@
+# Root Logger
+log4j.rootLogger=DEBUG, info_log, error_log
+
+# Appender + Layout details
+# info_log table
+log4j.appender.info_log=org.apache.log4j.jdbc.JDBCAppender
+log4j.appender.info_log.driver=org.postgresql.Driver
+log4j.appender.info_log.URL=jdbc:postgresql://localhost:5432/db_tse
+log4j.appender.info_log.user=postgres
+log4j.appender.info_log.password=vijayi wfh
+log4j.appender.info_log.Threshold=INFO
+log4j.appender.info_log.layout=org.apache.log4j.PatternLayout
+log4j.appender.info_log.sql=INSERT INTO tse.info_log (user_id, account_id, category, message, class, level, created_date_time, request_originating_page, system_response_time, thread_name) VALUES ('%X{userId}', '%X{accountId}', 1, '%m', '%C','%p', now(), '%X{requestOriginatingPage}', '%X{systemResponseTime}', '%t')
+log4j.appender.info_log.filter.a=org.apache.log4j.filter.LevelMatchFilter
+log4j.appender.info_log.filter.a.LevelToMatch=ERROR
+log4j.appender.info_log.filter.a.AcceptOnMatch=false
+
+# error_log table
+log4j.appender.error_log=org.apache.log4j.jdbc.JDBCAppender
+log4j.appender.error_log.driver=org.postgresql.Driver
+log4j.appender.error_log.URL=jdbc:postgresql://localhost:5432/db_tse
+log4j.appender.error_log.user=postgres
+log4j.appender.error_log.password=vijayi wfh
+log4j.appender.error_log.Threshold=ERROR
+log4j.appender.error_log.layout=org.apache.log4j.EnhancedPatternLayout
+log4j.appender.error_log.layout.ConversionPattern=INSERT INTO tse.error_log (user_id, account_id, class, level, created_date_time, error_short_description, error_long_description) VALUES ('%X{userId}', '%X{accountId}', '%C','%p', now(), '%m', '%throwable{100}')
+log4j.appender.error_log.filter.b=org.apache.log4j.filter.LevelMatchFilter
+log4j.appender.error_log.filter.b.LevelToMatch=ERROR
+log4j.appender.error_log.filter.b.AcceptOnMatch=true
