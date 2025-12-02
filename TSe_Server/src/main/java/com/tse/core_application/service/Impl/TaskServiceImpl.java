@@ -9316,16 +9316,36 @@ public class TaskServiceImpl {
         }
 
         // If bug is completed, validate that no RCA field is being modified
+        // Note: Empty list/null and empty string/null are treated as equivalent
         boolean rcaIdChanged = !Objects.equals(task.getRcaId(), taskDb.getRcaId());
         boolean isRcaDoneChanged = !Objects.equals(task.getIsRcaDone(), taskDb.getIsRcaDone());
-        boolean rcaReasonChanged = !Objects.equals(
-                task.getRcaReason() != null ? task.getRcaReason().trim() : null,
-                taskDb.getRcaReason() != null ? taskDb.getRcaReason().trim() : null);
-        boolean rcaIntroducedByChanged = !Objects.equals(task.getRcaIntroducedBy(), taskDb.getRcaIntroducedBy());
+        boolean rcaReasonChanged = !isStringEquivalent(task.getRcaReason(), taskDb.getRcaReason());
+        boolean rcaIntroducedByChanged = !isListEquivalent(task.getRcaIntroducedBy(), taskDb.getRcaIntroducedBy());
 
         if (rcaIdChanged || isRcaDoneChanged || rcaReasonChanged || rcaIntroducedByChanged) {
             throw new ValidationFailedException("RCA fields cannot be modified once the bug is marked as completed");
         }
+    }
+
+    /**
+     * Compares two strings treating null and empty string as equivalent.
+     */
+    private boolean isStringEquivalent(String s1, String s2) {
+        String normalized1 = (s1 == null || s1.trim().isEmpty()) ? null : s1.trim();
+        String normalized2 = (s2 == null || s2.trim().isEmpty()) ? null : s2.trim();
+        return Objects.equals(normalized1, normalized2);
+    }
+
+    /**
+     * Compares two lists treating null and empty list as equivalent.
+     */
+    private boolean isListEquivalent(List<?> list1, List<?> list2) {
+        boolean isEmpty1 = (list1 == null || list1.isEmpty());
+        boolean isEmpty2 = (list2 == null || list2.isEmpty());
+        if (isEmpty1 && isEmpty2) {
+            return true;
+        }
+        return Objects.equals(list1, list2);
     }
 
     public List<Long> findValidAccountIdList (List<Long> accountIdList) {
