@@ -7731,6 +7731,7 @@ public class TaskServiceImpl {
         normalizeMentorAndObserver(task);
         normalizeStarringField (task, taskDb);
         validateEstimateForParentTask(task, taskDb);
+        validateRcaFieldsNotEditableForCompletedBug(task, taskDb);
         validateAndNormalizeRca (task);
         validateOtherTaskProperties(task, taskDb);
     }
@@ -9286,6 +9287,44 @@ public class TaskServiceImpl {
         }
         if (task.getRcaReason() != null) {
             task.setRcaReason(task.getRcaReason().trim());
+        }
+    }
+
+    /**
+     * Validates that RCA fields are not modified once a bug/parent bug is marked as completed.
+     * PT-14170: RCA fields should not be editable after bug completion.
+     *
+     * @param task The task being updated (with new values)
+     * @param taskDb The original task from database
+     * @throws ValidationFailedException if RCA fields are being modified on a completed bug
+     */
+    public void validateRcaFieldsNotEditableForCompletedBug(Task task, Task taskDb) {
+        // Only validate for BUG_TASK or PARENT_TASK with isBug=true
+        boolean isBugTask = Objects.equals(taskDb.getTaskTypeId(), Constants.TaskTypes.BUG_TASK) ||
+                (taskDb.getIsBug() != null && taskDb.getIsBug() && Objects.equals(taskDb.getTaskTypeId(), Constants.TaskTypes.PARENT_TASK));
+
+        if (!isBugTask) {
+            return;
+        }
+
+        // Check if the original task (taskDb) is in COMPLETED status
+        boolean isCompleted = taskDb.getFkWorkflowTaskStatus() != null &&
+                Constants.WorkFlowStatusIds.COMPLETED.contains(taskDb.getFkWorkflowTaskStatus().getWorkflowTaskStatusId());
+
+        if (!isCompleted) {
+            return;
+        }
+
+        // If bug is completed, validate that no RCA field is being modified
+        boolean rcaIdChanged = !Objects.equals(task.getRcaId(), taskDb.getRcaId());
+        boolean isRcaDoneChanged = !Objects.equals(task.getIsRcaDone(), taskDb.getIsRcaDone());
+        boolean rcaReasonChanged = !Objects.equals(
+                task.getRcaReason() != null ? task.getRcaReason().trim() : null,
+                taskDb.getRcaReason() != null ? taskDb.getRcaReason().trim() : null);
+        boolean rcaIntroducedByChanged = !Objects.equals(task.getRcaIntroducedBy(), taskDb.getRcaIntroducedBy());
+
+        if (rcaIdChanged || isRcaDoneChanged || rcaReasonChanged || rcaIntroducedByChanged) {
+            throw new ValidationFailedException("RCA fields cannot be modified once the bug is marked as completed");
         }
     }
 
