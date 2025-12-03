@@ -1671,7 +1671,8 @@ public class LeaveService {
         YearMonth leaveMonth;
         LocalDate referenceDate;
         if (isForwardLeave) {
-            referenceDate = leaveFrom;
+            //claude changes: use leaveTo (end date) instead of leaveFrom (start date) for forward leave expiry calculation
+            referenceDate = leaveTo;
         } else {
             referenceDate = appliedDate;
         }
@@ -1696,7 +1697,8 @@ public class LeaveService {
         LocalDate expiryDate;
         if (isForwardLeave) {
             if(forwardDays!= FORWARD_DAYS) {
-                LocalDate forwardExpiry = leaveFrom.plusDays(forwardDays);
+                //claude changes: use leaveTo (end date) instead of leaveFrom (start date) as per requirement: Expiry Date = Leave End Date + X days
+                LocalDate forwardExpiry = leaveTo.plusDays(forwardDays);
                 expiryDate = forwardExpiry.isBefore(payRollDate) ? forwardExpiry : payRollDate;
             } else{
                 expiryDate=payRollDate;
