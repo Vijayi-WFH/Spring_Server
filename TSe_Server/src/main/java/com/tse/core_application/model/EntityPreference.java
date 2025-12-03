@@ -148,4 +148,12 @@ public class EntityPreference {
 
     @Column(name = "meet_auto_log_effort_enabled")
     private Boolean meetAutoLogEffortEnabled = false;
+
+    private Integer forwardDated;
+
+    private Integer backwardDated;
+
+    private Integer payRollGenerationDay;
+    private Boolean isPayRollAtLastDayOfMonth;
+    private Boolean isPayRollAtLastSecondDayOfMonth;
 }

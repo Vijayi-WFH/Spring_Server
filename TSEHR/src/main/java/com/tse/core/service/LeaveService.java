@@ -660,6 +660,7 @@ public class LeaveService {
         else{
             leaveApplication.setLeaveTypeId(Constants.Leave.TIME_OFF_LEAVE_TYPE_ID);
         }
+        leaveApplication.setExpiryLeaveDate(leaveApplicationRequest.getExpiryLeaveDate());
         leaveApplication.setLeaveApplicationStatusId(Constants.Leave.WAITING_APPROVAL_LEAVE_APPLICATION_STATUS_ID);
         leaveApplication.setFromDate(leaveApplicationRequest.getFromDate());
         leaveApplication.setToDate(leaveApplicationRequest.getToDate());
@@ -715,6 +716,7 @@ public class LeaveService {
         leaveApplication.setLeaveReason(leaveApplicationRequest.getLeaveReason());
         leaveApplication.setApproverAccountId(leaveApplicationRequest.getApproverAccountId());
         leaveApplication.setPhone(leaveApplicationRequest.getPhone());
+        leaveApplication.setExpiryLeaveDate(leaveApplicationRequest.getExpiryLeaveDate());
         leaveApplication.setAddress(leaveApplicationRequest.getAddress());
         if(leaveApplicationRequest.getNotifyTo()!=null){
             leaveApplication.setNotifyTo(leaveApplicationRequest.getNotifyTo().toString());

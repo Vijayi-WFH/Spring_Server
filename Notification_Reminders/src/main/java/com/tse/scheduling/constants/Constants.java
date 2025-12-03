@@ -42,4 +42,5 @@ public class Constants {
     public static final String missedPunch = "/missedPunch";
 
     public static final String retryFailedAiRegistration = "/ai/retryFailedUserRegistration";
+    public static final String expireLeaveApplicationsNotifications = "/expireLeaveApplicationsNotifications";
 }

@@ -108,4 +108,6 @@ public class LeaveApplication {
     private Integer halfDayLeaveType;
 
     private Boolean isSprintCapacityAdjustment;
+
+    private LocalDate expiryLeaveDate;
 }

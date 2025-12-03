@@ -42,6 +42,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.DataFormatException;
+
+import static com.tse.core_application.model.Constants.ExpiryDays.BACKWARD_DAYS;
+import static com.tse.core_application.model.Constants.ExpiryDays.FORWARD_DAYS;
+import static com.tse.core_application.model.Constants.Payroll.DEFAULT_PAYROLL_DAY;
+
 @Service
 public class LeaveService {
 
@@ -328,6 +333,7 @@ public class LeaveService {
         LeaveApplicationRequest leaveApplicationRequest = new LeaveApplicationRequest();
         leaveApplicationRequest.setAccountId(leaveRequest.getAccountId());
         leaveApplicationRequest.setLeaveSelectionTypeId(leaveRequest.getLeaveSelectionTypeId());
+        leaveApplicationRequest.setExpiryLeaveDate(getExpiryDateOfLeaveApplication(leaveRequest,LocalDate.now()));
         leaveApplicationRequest.setHalfDayLeaveType(leaveRequest.getHalfDayLeaveType());
         try {
             //from Date
@@ -463,6 +469,7 @@ public class LeaveService {
         leaveApplicationRequest.setPhone(leaveRequest.getPhone());
         leaveApplicationRequest.setAddress(leaveRequest.getAddress());
         leaveApplicationRequest.setNotifyTo(leaveRequest.getNotifyTo());
+        leaveApplicationRequest.setExpiryLeaveDate(getExpiryDateOfLeaveApplication(leaveRequest,LocalDate.now()));
 
 
         RestTemplate restTemplate = new RestTemplate();
@@ -1653,6 +1660,112 @@ public class LeaveService {
             logger.error("Error fetching leave days for accountId: " + accountId, e);
         }
         return leaveDayMap;
+    }
+    public LocalDate getExpiryDateOfLeaveApplication(
+            LeaveApplicationRequest request, LocalDate appliedDate
+    ) {
+        LocalDate leaveFrom = request.getFromDate();
+        LocalDate leaveTo = request.getToDate();
+        boolean isForwardLeave = !appliedDate.isAfter(leaveFrom);
+        Long orgId = userAccountRepository.findOrgIdByAccountId(request.getAccountId());
+        YearMonth leaveMonth;
+        LocalDate referenceDate;
+        if (isForwardLeave) {
+            referenceDate = leaveFrom;
+        } else {
+            referenceDate = appliedDate;
+        }
+        Optional<EntityPreference> entityPreferenceOpt = entityPreferenceRepository
+                .findByEntityTypeIdAndEntityId(Constants.EntityTypes.ORG, orgId);
+        int forwardDays= FORWARD_DAYS;
+        int backwardDays= BACKWARD_DAYS;
+        LocalDate payRollDate;
+        if (entityPreferenceOpt.isPresent()) {
+            EntityPreference entityPreference = entityPreferenceOpt.get();
+            if (entityPreference.getForwardDated() != null) {
+                forwardDays = entityPreference.getForwardDated() ;
+            }
+            if (entityPreference.getBackwardDated() != null) {
+                backwardDays = entityPreference.getBackwardDated();
+            }
+            payRollDate=generatePayRollDate(referenceDate,entityPreference);
+        }
+        else {
+            payRollDate=generateDefaultPayroll(referenceDate);
+        }
+        LocalDate expiryDate;
+        if (isForwardLeave) {
+            if(forwardDays!= FORWARD_DAYS) {
+                LocalDate forwardExpiry = leaveFrom.plusDays(forwardDays);
+                expiryDate = forwardExpiry.isBefore(payRollDate) ? forwardExpiry : payRollDate;
+            } else{
+                expiryDate=payRollDate;
+            }
+        } else {
+            if(backwardDays!= BACKWARD_DAYS) {
+                LocalDate backwardExpiry = appliedDate.plusDays(backwardDays);
+                expiryDate = backwardExpiry.isBefore(payRollDate) ? backwardExpiry : payRollDate;
+            } else{
+                expiryDate=payRollDate;
+            }
+        }
+        return expiryDate;
+    }
+
+    private LocalDate generatePayRollDate(
+            LocalDate referenceDate,
+            EntityPreference entityPreference
+    ) {
+        if (entityPreference == null) {
+            return generateDefaultPayroll(referenceDate);
+        }
+        YearMonth yearMonth = YearMonth.from(referenceDate);
+        int lastDay = yearMonth.lengthOfMonth();
+        Integer customDay = entityPreference.getPayRollGenerationDay();
+        Boolean lastDayFlag = entityPreference.getIsPayRollAtLastDayOfMonth();
+        Boolean secondLastDayFlag = entityPreference.getIsPayRollAtLastSecondDayOfMonth();
+        LocalDate payrollDate;
+        if (Boolean.TRUE.equals(lastDayFlag)) {
+            payrollDate = yearMonth.atEndOfMonth();
+        }
+        else if (Boolean.TRUE.equals(secondLastDayFlag)) {
+            payrollDate = LocalDate.of(yearMonth.getYear(), yearMonth.getMonthValue(), lastDay - 1);
+        }
+        else if (customDay != null && customDay >= 1 && customDay <= 29) {
+            int validDay = Math.min(customDay, lastDay);
+            payrollDate = LocalDate.of(yearMonth.getYear(), yearMonth.getMonthValue(), validDay);
+        }
+        else {
+            int validDay = Math.min(DEFAULT_PAYROLL_DAY, lastDay);
+            payrollDate = LocalDate.of(yearMonth.getYear(), yearMonth.getMonthValue(), validDay);
+        }
+        if (!payrollDate.isAfter(referenceDate)) {
+            YearMonth nextMonth = yearMonth.plusMonths(1);
+            int nextLastDay = nextMonth.lengthOfMonth();
+            if (Boolean.TRUE.equals(lastDayFlag)) {
+                payrollDate = nextMonth.atEndOfMonth();
+            } else if (Boolean.TRUE.equals(secondLastDayFlag)) {
+                payrollDate = LocalDate.of(nextMonth.getYear(), nextMonth.getMonthValue(), nextLastDay - 1);
+            } else {
+                int selectedDay = payrollDate.getDayOfMonth();
+                int finalDay = Math.min(selectedDay, nextLastDay);
+                payrollDate = LocalDate.of(nextMonth.getYear(), nextMonth.getMonthValue(), finalDay);
+            }
+        }
+        return payrollDate;
+    }
+
+    private LocalDate generateDefaultPayroll(LocalDate referenceDate) {
+        int day = DEFAULT_PAYROLL_DAY;
+        YearMonth ym = YearMonth.from(referenceDate);
+        int last = ym.lengthOfMonth();
+        LocalDate payrollDate = LocalDate.of(ym.getYear(), ym.getMonthValue(), Math.min(day, last));
+        if (!payrollDate.isAfter(referenceDate)) {
+            YearMonth next = ym.plusMonths(1);
+            int nextLast = next.lengthOfMonth();
+            payrollDate = LocalDate.of(next.getYear(), next.getMonthValue(), Math.min(day, nextLast));
+        }
+        return payrollDate;
     }
 }
 

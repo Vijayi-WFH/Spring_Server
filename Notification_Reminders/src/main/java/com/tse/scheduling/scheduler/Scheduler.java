@@ -406,4 +406,24 @@ public class Scheduler {
             logger.error(LocalDateTime.now() + ". Caught error in deleteAlerts: " + e.getMessage(), e);
         }
     }
+    @Scheduled(cron = "0 0 12 * * ?")
+    public void expiredLeaveApplicationNotificationScheduler() {
+        try {
+            logger.info("Notification scheduler started at " + LocalDateTime.now());
+            RestTemplate restTemplate = new RestTemplate();
+            String uri = rootPath + Constants.notificationRoot + Constants.expireLeaveApplicationsNotifications;
+            MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+            HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(
+                    uri,
+                    HttpMethod.POST,
+                    requestEntity,
+                    new ParameterizedTypeReference<String>() {}
+            );
+            logger.info("Notification scheduler completed at " + LocalDateTime.now() + " with response " + response);
+        } catch (Exception e) {
+            logger.error(LocalDateTime.now() + ". Caught error in expiredLeaveApplicationNotificationScheduler: " + e);
+        }
+    }
 }

@@ -168,6 +168,19 @@ public class EntityPreferenceService {
             if (entityPreferenceToSave.getOfficeHrsStartTime() != null && entityPreferenceToSave.getOfficeHrsEndTime().isBefore(entityPreferenceToSave.getOfficeHrsStartTime())) {
                 endDate = endDate.plusDays(1);
             }
+            if (request.getForwardDated() != null) {
+                entityPreferenceToSave.setForwardDated(request.getForwardDated());
+            }
+            if (request.getBackwardDated() != null) {
+                entityPreferenceToSave.setBackwardDated(request.getBackwardDated());
+            }
+            if (request.getIsPayRollAtLastDayOfMonth() != null) {
+                entityPreferenceToSave.setIsPayRollAtLastDayOfMonth(request.getIsPayRollAtLastDayOfMonth());
+            } else if (request.getIsPayRollAtLastSecondDayOfMonth() != null) {
+                entityPreferenceToSave.setIsPayRollAtLastSecondDayOfMonth(request.getIsPayRollAtLastSecondDayOfMonth());
+            } else if (request.getPayRollGenerationDay() != null) {
+                entityPreferenceToSave.setPayRollGenerationDay(request.getPayRollGenerationDay());
+            }
 
             entityPreferenceToSave.setOfficeHrsEndDateTime(DateTimeUtils.convertUserDateToServerTimezone(LocalDateTime.of(endDate, entityPreferenceToSave.getOfficeHrsEndTime()), timeZone));
         }
@@ -200,6 +213,11 @@ public class EntityPreferenceService {
         if(savedEntityPreference.getAllowedFileSize() != null) entityPreferenceResponse.setAllowedFileSize(savedEntityPreference.getAllowedFileSize() / 1048576);
         List<HolidayResponse> holidays = holidayOffDayRepository.findCustomHolidayResponseByEntityPreferenceIdAndIsActive(savedEntityPreference.getEntityPreferenceId(), true);
         entityPreferenceResponse.setHolidays(holidays);
+        entityPreferenceResponse.setBackwardDated(entityPreferenceToSave.getBackwardDated());
+        entityPreferenceResponse.setForwardDated(entityPreferenceToSave.getForwardDated());
+        entityPreferenceResponse.setPayRollGenerationDay(entityPreferenceToSave.getPayRollGenerationDay());
+        entityPreferenceResponse.setIsPayRollAtLastDayOfMonth(entityPreferenceToSave.getIsPayRollAtLastDayOfMonth());
+        entityPreferenceResponse.setIsPayRollAtLastSecondDayOfMonth(entityPreferenceToSave.getIsPayRollAtLastSecondDayOfMonth());
 
         Boolean updateCapacitiesForJustNewHoldiays = !updateCapacities && (request.getHolidays() != null);
         if (updateCapacities || updateCapacitiesForJustNewHoldiays) {
