@@ -698,15 +698,30 @@ public class JiraToTseMappingService {
      * @param childTaskList
      */
     public void getAndSetAllChildTaskWorkFlowStatus (AddJiraTaskRequest addJiraTaskRequest, List<JiraTasks> jiraChildTasksToCreate, Map<Long, Task> childTaskList) {
+        // First pass: collect all child statuses from Jira
         for (JiraTasks jiraChildTask : jiraChildTasksToCreate) {
             Task childTask = new Task();
-            // Create child task (assuming other required fields are set elsewhere)
             Integer childWorkflowStatusId = getWorkFlowStatus(addJiraTaskRequest, jiraChildTask);
 
             if (childWorkflowStatusId != null) {
-                // If child task status is not null, set the status and add to childTaskList
                 childTask.setFkWorkflowTaskStatus(workFlowTaskStatusRepository.findByWorkflowTaskStatusId(childWorkflowStatusId));
                 childTaskList.put(jiraChildTask.getIssueId(), childTask);
+            }
+        }
+
+        // Second pass: enforce business rule - if any child is beyond Backlog, no child should be in Backlog
+        boolean anyChildBeyondBacklog = childTaskList.values().stream()
+                .anyMatch(task -> !Objects.equals(task.getFkWorkflowTaskStatus().getWorkflowTaskStatusId(),
+                        Constants.WorkFlowStatusTeamTaskStatusId.BACKLOG));
+
+        // If any child is beyond Backlog, promote all Backlog children to Not Started
+        if (anyChildBeyondBacklog) {
+            for (Task childTask : childTaskList.values()) {
+                if (Objects.equals(childTask.getFkWorkflowTaskStatus().getWorkflowTaskStatusId(),
+                        Constants.WorkFlowStatusTeamTaskStatusId.BACKLOG)) {
+                    childTask.setFkWorkflowTaskStatus(
+                            workFlowTaskStatusRepository.findByWorkflowTaskStatusId(Constants.WorkFlowStatusTeamTaskStatusId.NOT_STARTED));
+                }
             }
         }
     }
