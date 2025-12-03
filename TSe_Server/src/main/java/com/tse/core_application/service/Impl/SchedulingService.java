@@ -800,8 +800,8 @@ public class SchedulingService {
     }
 
     public void expireLeaves () {
-        List<LeaveApplication> allPendingLeaveApplications = leaveApplicationRepository.findByFromDateLessThanEqualAndLeaveApplicationStatusId(LocalDate.now(), Constants.LeaveApplicationStatusIds.WAITING_APPROVAL_LEAVE_APPLICATION_STATUS_ID);
-        for (LeaveApplication leaveApplication : allPendingLeaveApplications) {
+        List<LeaveApplication> expiredLeaveApplications = leaveApplicationRepository.findByExpiryLeaveDateAndStatus(LocalDate.now(), Constants.LeaveApplicationStatusIds.WAITING_APPROVAL_LEAVE_APPLICATION_STATUS_ID);
+        for (LeaveApplication leaveApplication : expiredLeaveApplications) {
             leaveApplication.setLeaveApplicationStatusId(Constants.LeaveApplicationStatusIds.LEAVE_APPLICATION_EXPIRED_STATUS_ID);
             UserAccount userAccount = userAccountRepository.findByAccountIdAndIsActive(leaveApplication.getAccountId(), true);
             if (userAccount == null) {
@@ -1630,5 +1630,26 @@ public class SchedulingService {
         Timestamp cutoff = Timestamp.valueOf(cutoffLdt);
 
         int updated = alertRepository.updateIsDeletedTrueWhereCreatedDateTimeOlderThan(cutoff);
+    }
+
+    public void expiredLeaveApplicationNotification() {
+        LocalDate today = LocalDate.now();
+        LocalDate tomorrow = today.plusDays(1);
+        List<LeaveApplication> allExpiredApplicationList = new ArrayList<>();
+        List<LeaveApplication> expiringToday = leaveApplicationRepository.
+                findByExpiryLeaveDateAndStatus(
+                        today,
+                        Constants.LeaveApplicationStatusIds.WAITING_APPROVAL_LEAVE_APPLICATION_STATUS_ID
+                );
+        List<LeaveApplication> expiringTomorrow =
+                leaveApplicationRepository.findByExpiryLeaveDateAndStatus(
+                        tomorrow,
+                        Constants.LeaveApplicationStatusIds.WAITING_APPROVAL_LEAVE_APPLICATION_STATUS_ID
+                );
+        allExpiredApplicationList.addAll(expiringToday);
+        allExpiredApplicationList.addAll(expiringTomorrow);
+        List<HashMap<String, String>> payloads =
+                notificationService.createPayloadForLeavesNotification(allExpiredApplicationList);
+        taskServiceImpl.sendPushNotification(payloads);
     }
 }

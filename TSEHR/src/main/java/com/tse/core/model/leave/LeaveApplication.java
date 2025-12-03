@@ -109,4 +109,6 @@ public class LeaveApplication {
 
     private Boolean isSprintCapacityAdjustment;
 
+    private LocalDate expiryLeaveDate;
+
 }

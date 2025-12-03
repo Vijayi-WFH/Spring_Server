@@ -3513,6 +3513,69 @@ public class NotificationService {
 
         return taskPayloadString;
     }
+    public List<HashMap<String, String>> createPayloadForLeavesNotification(List<LeaveApplication> leaveApplicationList) {
+        List<HashMap<String, String>> notificationList = new ArrayList<HashMap<String, String>>();
+        try {
+            String title="Leave Application Expired";
+            for (LeaveApplication leaveApplication:leaveApplicationList) {
+                Long applicationId = leaveApplication.getLeaveApplicationId();
+                UserAccount userAccount=userAccountRepository.findByAccountId(leaveApplication.getAccountId());
+                String body="The leave application for "+userAccount.getEmail()+" from"+leaveApplication.getFromDate()+" to "+leaveApplication.getToDate() +" will expired and requires your review.";
+                HashSet<Long> accountIdList = new HashSet<>();
+                accountIdList.add(leaveApplication.getApproverAccountId());
+                notificationList.addAll(updatePayloadFormatForExpiredLeaves(accountIdList, leaveApplication, LEAVE_EXPIRED, title,body));
+            }
+        } catch (Exception e) {
+            String allStackTraces = StackTraceHandler.getAllStackTraces(e);
+            logger.error("Notification not created in createPayloadForLeavesNotification. Caught Exception: " + e, new Throwable(allStackTraces));
+        }
+        return notificationList;
+    }
+    private List<HashMap<String, String>> updatePayloadFormatForExpiredLeaves(HashSet<Long> accountIdList, LeaveApplication leaveApplication, String notificationType, String title, String body) {
+        Payload load = new Payload();
+        LocalDateTime createdDateTime = leaveApplication.getCreatedDateTime();
+        load.setNotificationType(notificationType);
+        load.setTitle(title);
+        load.setBody(body);
+        load.setScrollTo(String.valueOf(scrollToRepository.findScrollToIdByScrollToTitle(Constants.ScrollToType.SCROLL_NOT_REQUIRED)));
+        NotificationType notificationTypeId = notificationTypeRepository.findByNotificationType(notificationType);
+        List<HashMap<String, String>> listOfPayload = new ArrayList<HashMap<String, String>>();
+        //Create notification for meeting reminder
+        load.setAccountId(leaveApplication.getAccountId().toString());
+        load.setCategoryId(notificationTypeId.getNotificationCategoryId().toString());
+        Notification notifi = createExpiredLeavesNotification(notificationTypeId, leaveApplication, load);
+        //creating new notificationView for notification for each accountId
+        for (Long accountId : accountIdList) {
+            schedulingService.newNotificationView(notifi, accountId);
+            load.setAccountId(String.valueOf(accountId));
+            UserAccount userAccount = userAccountRepository.findByAccountIdAndIsActive(accountId, true);
+            if (userAccount != null && createdDateTime != null) {
+                ZonedDateTime systemZonedDateTime = createdDateTime.atZone(ZoneId.systemDefault());
+                ZoneId userTimeZone = ZoneId.of(userAccount.getFkUserId().getTimeZone());
+//                ZonedDateTime zonedDateTime = createdDateTime.atZone(userTimeZone);
+                ZonedDateTime zonedDateTime = systemZonedDateTime.withZoneSameInstant(userTimeZone);
+                LocalDateTime localDateTime = LocalDateTime.from(zonedDateTime);
+                load.setCreatedDateTime(localDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            }
+
+            load.setNotificationId(String.valueOf(notifi.getNotificationId()));
+            HashMap<String, String> loadMap = objectMapper.convertValue(load, HashMap.class);
+            loadMap.entrySet().removeIf(entry -> entry.getValue() == null);
+            listOfPayload.add(loadMap);
+        }
+        return listOfPayload;
+    }
+
+    private Notification createExpiredLeavesNotification(NotificationType notificationTypeId, LeaveApplication leaveApplication, Payload load) {
+        Notification newNotification = new Notification();
+        newNotification.setNotificationTypeID(notificationTypeId);
+        newNotification.setAccountId(userAccountRepository.findByAccountId(leaveApplication.getApproverAccountId()));
+        newNotification.setNotificationTitle(convertTypeToString(load.getTitle()));
+        newNotification.setNotificationBody(load.getBody());
+        newNotification.setPayload(gson.toJson(load));
+        newNotification.setCategoryId(NotificationTypeToCategory.LEAVE_EXPIRED.getCategoryId());
+        return notificationRepository.save(newNotification);
+    }
 }
 
 

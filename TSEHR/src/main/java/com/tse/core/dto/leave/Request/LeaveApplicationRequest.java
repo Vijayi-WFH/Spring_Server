@@ -62,4 +62,6 @@ public class LeaveApplicationRequest {
     private Boolean isAttachmentPresent;
 
     private Integer halfDayLeaveType;
+
+    private LocalDate expiryLeaveDate;
 }

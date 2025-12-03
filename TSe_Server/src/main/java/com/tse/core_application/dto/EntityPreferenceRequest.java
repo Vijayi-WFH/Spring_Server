@@ -54,4 +54,13 @@ public class EntityPreferenceRequest {
     private Integer minApprovedSickDaysWithoutMedicalCert;
     private List<Integer> starringWorkItemRoleIdList;
     private Boolean meetAutoLogEffortEnabled;
+    private Integer forwardDated;
+
+    private Integer backwardDated;
+
+    private Integer payRollGenerationDay;
+
+    private Boolean isPayRollAtLastDayOfMonth;
+
+    private Boolean isPayRollAtLastSecondDayOfMonth;
 }
