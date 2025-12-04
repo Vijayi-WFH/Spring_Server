@@ -1796,8 +1796,8 @@ public class LeaveService {
             throw new ValidationFailedException("Leave application not found");
         }
 
-        // Claude change: Validate the leave is in CONSUMED status
-        if (!Objects.equals(leaveApplication.getLeaveApplicationStatusId(), Constants.Leave.CONSUMED_LEAVE_APPLICATION_STATUS_ID)) {
+        // Validate the leave is in CONSUMED status
+        if (!Objects.equals(leaveApplication.getLeaveApplicationStatusId(), Constants.LeaveApplicationStatusIds.CONSUMED_LEAVE_APPLICATION_STATUS_ID)) {
             throw new ValidationFailedException("Only consumed leaves can be edited");
         }
 
@@ -2046,8 +2046,8 @@ public class LeaveService {
             throw new ValidationFailedException("Leave application not found");
         }
 
-        // Claude change: Validate the leave is in CONSUMED status
-        if (!Objects.equals(leaveApplication.getLeaveApplicationStatusId(), Constants.Leave.CONSUMED_LEAVE_APPLICATION_STATUS_ID)) {
+        // Validate the leave is in CONSUMED status
+        if (!Objects.equals(leaveApplication.getLeaveApplicationStatusId(), Constants.LeaveApplicationStatusIds.CONSUMED_LEAVE_APPLICATION_STATUS_ID)) {
             throw new ValidationFailedException("Only consumed leaves can be deleted");
         }
 
@@ -2088,9 +2088,9 @@ public class LeaveService {
                 // New values are null for DELETE
                 .build();
 
-        // Claude change: Soft delete - set isDeleted flag and change status to DELETED
+        // Soft delete - set isDeleted flag and change status to DELETED
         leaveApplication.setIsDeleted(true);
-        leaveApplication.setLeaveApplicationStatusId(Constants.Leave.DELETED_LEAVE_APPLICATION_STATUS_ID);
+        leaveApplication.setLeaveApplicationStatusId(Constants.LeaveApplicationStatusIds.DELETED_LEAVE_APPLICATION_STATUS_ID);
 
         // Claude change: Save the updated leave application
         leaveApplicationRepository.save(leaveApplication);
@@ -2280,9 +2280,9 @@ public class LeaveService {
         if (leaveTypeId == null) {
             return null;
         }
-        if (leaveTypeId.equals(Constants.Leave.TIME_OFF_LEAVE_TYPE_ID)) {
+        if (leaveTypeId.equals(Constants.TIME_OFF_LEAVE_TYPE_ID)) {
             return "Time Off";
-        } else if (leaveTypeId.equals(Constants.Leave.SICK_LEAVE_TYPE_ID)) {
+        } else if (leaveTypeId.equals(Constants.SICK_LEAVE_TYPE_ID)) {
             return "Sick Leave";
         }
         return "Unknown";
