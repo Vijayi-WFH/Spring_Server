@@ -131,6 +131,9 @@ public class LeaveService {
 
     @Autowired
     private UserFeatureAccessRepository userFeatureAccessRepository;
+
+    @Autowired
+    private LeaveApplicationHistoryRepository leaveApplicationHistoryRepository;
     /**
      * This method is used to add leave policy in the organization
      * @param leavePolicyRequest
@@ -1768,6 +1771,381 @@ public class LeaveService {
             payrollDate = LocalDate.of(next.getYear(), next.getMonthValue(), Math.min(day, nextLast));
         }
         return payrollDate;
+    }
+
+    // ==================== CONSUMED LEAVE EDIT/DELETE METHODS ====================
+
+    /**
+     * Edit a consumed leave by Org Admin.
+     * Only consumed leaves (statusId = 8) can be edited through this API.
+     * Creates audit trail in LeaveApplicationHistory.
+     *
+     * @param request Edit request with updated fields and mandatory reason
+     * @param adminAccountId Account ID of the admin making the change
+     * @return Updated leave application response
+     */
+    public LeaveApplicationResponse editConsumedLeave(EditConsumedLeaveRequest request, Long adminAccountId) {
+        // Validate admin has Org Admin role
+        if (!isOrgAdminOrBackUpAdmin(null, null, adminAccountId)) {
+            throw new ValidationFailedException("Only Org Admin or Backup Org Admin can edit consumed leaves");
+        }
+
+        // Get the leave application
+        LeaveApplication leaveApplication = leaveApplicationRepository.findByLeaveApplicationId(request.getLeaveApplicationId());
+        if (leaveApplication == null) {
+            throw new ValidationFailedException("Leave application not found");
+        }
+
+        // Validate the leave is in CONSUMED status
+        if (!Objects.equals(leaveApplication.getLeaveApplicationStatusId(), Constants.LeaveApplicationStatusIds.CONSUMED_LEAVE_APPLICATION_STATUS_ID)) {
+            throw new ValidationFailedException("Only consumed leaves can be edited");
+        }
+
+        // Validate the leave is not already deleted
+        if (Boolean.TRUE.equals(leaveApplication.getIsDeleted())) {
+            throw new ValidationFailedException("Cannot edit a deleted leave");
+        }
+
+        // Validate mandatory reason
+        if (request.getReason() == null || request.getReason().trim().isEmpty()) {
+            throw new ValidationFailedException("Reason for edit is mandatory");
+        }
+
+        // Store old values for audit
+        LeaveApplicationHistory history = LeaveApplicationHistory.builder()
+                .leaveApplicationId(leaveApplication.getLeaveApplicationId())
+                .updatedByAccountId(adminAccountId)
+                .actionType("EDIT")
+                .reason(request.getReason())
+                .oldFromDate(leaveApplication.getFromDate())
+                .oldFromTime(leaveApplication.getFromTime())
+                .oldToDate(leaveApplication.getToDate())
+                .oldToTime(leaveApplication.getToTime())
+                .oldLeaveTypeId(leaveApplication.getLeaveTypeId())
+                .oldLeaveDays(leaveApplication.getNumberOfLeaveDays())
+                .oldIsHalfDay(leaveApplication.getIsLeaveForHalfDay())
+                .oldHalfDayLeaveType(leaveApplication.getHalfDayLeaveType())
+                .oldLeaveReason(leaveApplication.getLeaveReason())
+                .oldAddress(leaveApplication.getAddress())
+                .build();
+
+        // Apply updates (only if provided in request)
+        if (request.getFromDate() != null) {
+            leaveApplication.setFromDate(request.getFromDate());
+        }
+        if (request.getFromTime() != null) {
+            leaveApplication.setFromTime(request.getFromTime());
+        }
+        if (request.getToDate() != null) {
+            leaveApplication.setToDate(request.getToDate());
+        }
+        if (request.getToTime() != null) {
+            leaveApplication.setToTime(request.getToTime());
+        }
+        if (request.getLeaveTypeId() != null) {
+            leaveApplication.setLeaveTypeId(request.getLeaveTypeId());
+        }
+        if (request.getNumberOfLeaveDays() != null) {
+            leaveApplication.setNumberOfLeaveDays(request.getNumberOfLeaveDays());
+        }
+        if (request.getIsHalfDay() != null) {
+            leaveApplication.setIsLeaveForHalfDay(request.getIsHalfDay());
+        }
+        if (request.getHalfDayLeaveType() != null) {
+            leaveApplication.setHalfDayLeaveType(request.getHalfDayLeaveType());
+        }
+        if (request.getLeaveReason() != null) {
+            leaveApplication.setLeaveReason(request.getLeaveReason());
+        }
+        if (request.getAddress() != null) {
+            leaveApplication.setAddress(request.getAddress());
+        }
+
+        // Set new values in history
+        history.setNewFromDate(leaveApplication.getFromDate());
+        history.setNewFromTime(leaveApplication.getFromTime());
+        history.setNewToDate(leaveApplication.getToDate());
+        history.setNewToTime(leaveApplication.getToTime());
+        history.setNewLeaveTypeId(leaveApplication.getLeaveTypeId());
+        history.setNewLeaveDays(leaveApplication.getNumberOfLeaveDays());
+        history.setNewIsHalfDay(leaveApplication.getIsLeaveForHalfDay());
+        history.setNewHalfDayLeaveType(leaveApplication.getHalfDayLeaveType());
+        history.setNewLeaveReason(leaveApplication.getLeaveReason());
+        history.setNewAddress(leaveApplication.getAddress());
+
+        // Save the updated leave application
+        leaveApplicationRepository.save(leaveApplication);
+
+        // Save the history record
+        leaveApplicationHistoryRepository.save(history);
+
+        // Send notification to employee
+        notificationService.notifyForConsumedLeaveEdit(leaveApplication, history, adminAccountId);
+
+        logger.info("Consumed leave edited successfully. LeaveApplicationId: {}, EditedBy: {}",
+                    request.getLeaveApplicationId(), adminAccountId);
+
+        // Return response
+        return buildLeaveApplicationResponse(leaveApplication);
+    }
+
+    /**
+     * Delete a consumed leave by Org Admin (soft delete).
+     * Only consumed leaves (statusId = 8) can be deleted through this API.
+     * Creates audit trail in LeaveApplicationHistory.
+     * Restores leave balance to employee.
+     *
+     * @param request Delete request with mandatory reason
+     * @param adminAccountId Account ID of the admin making the change
+     */
+    public void deleteConsumedLeave(DeleteConsumedLeaveRequest request, Long adminAccountId) {
+        // Validate admin has Org Admin role
+        if (!isOrgAdminOrBackUpAdmin(null, null, adminAccountId)) {
+            throw new ValidationFailedException("Only Org Admin or Backup Org Admin can delete consumed leaves");
+        }
+
+        // Get the leave application
+        LeaveApplication leaveApplication = leaveApplicationRepository.findByLeaveApplicationId(request.getLeaveApplicationId());
+        if (leaveApplication == null) {
+            throw new ValidationFailedException("Leave application not found");
+        }
+
+        // Validate the leave is in CONSUMED status
+        if (!Objects.equals(leaveApplication.getLeaveApplicationStatusId(), Constants.LeaveApplicationStatusIds.CONSUMED_LEAVE_APPLICATION_STATUS_ID)) {
+            throw new ValidationFailedException("Only consumed leaves can be deleted");
+        }
+
+        // Validate the leave is not already deleted
+        if (Boolean.TRUE.equals(leaveApplication.getIsDeleted())) {
+            throw new ValidationFailedException("Leave is already deleted");
+        }
+
+        // Validate mandatory reason
+        if (request.getReason() == null || request.getReason().trim().isEmpty()) {
+            throw new ValidationFailedException("Reason for deletion is mandatory");
+        }
+
+        // Create history record with old values (new values are null for DELETE)
+        LeaveApplicationHistory history = LeaveApplicationHistory.builder()
+                .leaveApplicationId(leaveApplication.getLeaveApplicationId())
+                .updatedByAccountId(adminAccountId)
+                .actionType("DELETE")
+                .reason(request.getReason())
+                .oldFromDate(leaveApplication.getFromDate())
+                .oldFromTime(leaveApplication.getFromTime())
+                .oldToDate(leaveApplication.getToDate())
+                .oldToTime(leaveApplication.getToTime())
+                .oldLeaveTypeId(leaveApplication.getLeaveTypeId())
+                .oldLeaveDays(leaveApplication.getNumberOfLeaveDays())
+                .oldIsHalfDay(leaveApplication.getIsLeaveForHalfDay())
+                .oldHalfDayLeaveType(leaveApplication.getHalfDayLeaveType())
+                .oldLeaveReason(leaveApplication.getLeaveReason())
+                .oldAddress(leaveApplication.getAddress())
+                // New values are null for DELETE
+                .build();
+
+        // Soft delete - set isDeleted flag and change status to DELETED
+        leaveApplication.setIsDeleted(true);
+        leaveApplication.setLeaveApplicationStatusId(Constants.LeaveApplicationStatusIds.DELETED_LEAVE_APPLICATION_STATUS_ID);
+
+        // Save the updated leave application
+        leaveApplicationRepository.save(leaveApplication);
+
+        // Save the history record
+        leaveApplicationHistoryRepository.save(history);
+
+        // Restore leave balance to employee
+        restoreLeaveBalance(leaveApplication);
+
+        // Send notification to employee
+        notificationService.notifyForConsumedLeaveDelete(leaveApplication, history, adminAccountId);
+
+        logger.info("Consumed leave deleted successfully. LeaveApplicationId: {}, DeletedBy: {}",
+                    request.getLeaveApplicationId(), adminAccountId);
+    }
+
+    /**
+     * Restore leave balance when a consumed leave is deleted.
+     * Adds back the leave days to employee's available balance.
+     */
+    private void restoreLeaveBalance(LeaveApplication leaveApplication) {
+        Optional<LeaveRemaining> leaveRemainingOpt = leaveRemainingRepository
+                .findActiveByAccountIdAndLeaveTypeId(leaveApplication.getAccountId(), leaveApplication.getLeaveTypeId());
+
+        if (leaveRemainingOpt.isPresent()) {
+            LeaveRemaining leaveRemaining = leaveRemainingOpt.get();
+            Float daysToRestore = leaveApplication.getNumberOfLeaveDays();
+
+            if (daysToRestore != null && daysToRestore > 0) {
+                // Add back to remaining balance
+                Float currentRemaining = leaveRemaining.getLeaveRemaining() != null ? leaveRemaining.getLeaveRemaining() : 0f;
+                leaveRemaining.setLeaveRemaining(currentRemaining + daysToRestore);
+
+                // Subtract from taken
+                Float currentTaken = leaveRemaining.getLeaveTaken() != null ? leaveRemaining.getLeaveTaken() : 0f;
+                leaveRemaining.setLeaveTaken(Math.max(0f, currentTaken - daysToRestore));
+
+                leaveRemainingRepository.save(leaveRemaining);
+                logger.info("Leave balance restored. AccountId: {}, DaysRestored: {}",
+                           leaveApplication.getAccountId(), daysToRestore);
+            }
+        } else {
+            logger.warn("Could not find active leave remaining record to restore balance. AccountId: {}, LeaveTypeId: {}",
+                       leaveApplication.getAccountId(), leaveApplication.getLeaveTypeId());
+        }
+    }
+
+    /**
+     * Get leave application history/audit trail.
+     * Admin can see all history (with optional employee filter).
+     * Employee can only see their own history.
+     *
+     * @param request Filter criteria
+     * @param requestingAccountId Account ID of the user making the request
+     * @param roleIds Role IDs of the requesting user
+     * @return List of history records
+     */
+    public List<LeaveApplicationHistoryResponse> getLeaveApplicationHistory(
+            LeaveApplicationHistoryRequest request,
+            Long requestingAccountId,
+            List<Integer> roleIds) {
+
+        List<LeaveApplicationHistory> historyList;
+        boolean isAdmin = isOrgAdminOrBackUpAdmin(null, null, requestingAccountId);
+
+        if (isAdmin) {
+            // Admin can see all history
+            if (request.getLeaveApplicationId() != null) {
+                // Filter by specific leave application
+                historyList = leaveApplicationHistoryRepository
+                        .findByLeaveApplicationIdOrderByUpdatedOnDesc(request.getLeaveApplicationId());
+            } else if (request.getAccountId() != null) {
+                // Filter by specific employee
+                if (request.getFromDate() != null && request.getToDate() != null) {
+                    historyList = leaveApplicationHistoryRepository
+                            .findByEmployeeAccountIdAndDateRange(request.getAccountId(), request.getFromDate(), request.getToDate());
+                } else {
+                    historyList = leaveApplicationHistoryRepository
+                            .findByEmployeeAccountId(request.getAccountId());
+                }
+            } else if (request.getFromDate() != null && request.getToDate() != null) {
+                // Filter by date range only
+                historyList = leaveApplicationHistoryRepository
+                        .findByDateRange(request.getFromDate(), request.getToDate());
+            } else {
+                // Get all history
+                historyList = leaveApplicationHistoryRepository.findAll();
+            }
+        } else {
+            // Non-admin can only see their own history
+            if (request.getFromDate() != null && request.getToDate() != null) {
+                historyList = leaveApplicationHistoryRepository
+                        .findByEmployeeAccountIdAndDateRange(requestingAccountId, request.getFromDate(), request.getToDate());
+            } else {
+                historyList = leaveApplicationHistoryRepository
+                        .findByEmployeeAccountId(requestingAccountId);
+            }
+        }
+
+        // Convert to response DTOs
+        return historyList.stream()
+                .map(this::convertToHistoryResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Convert LeaveApplicationHistory entity to response DTO.
+     */
+    private LeaveApplicationHistoryResponse convertToHistoryResponse(LeaveApplicationHistory history) {
+        LeaveApplicationHistoryResponse response = LeaveApplicationHistoryResponse.builder()
+                .historyId(history.getHistoryId())
+                .leaveApplicationId(history.getLeaveApplicationId())
+                .actionType(history.getActionType())
+                .reason(history.getReason())
+                .updatedOn(history.getUpdatedOn())
+                .updatedByAccountId(history.getUpdatedByAccountId())
+                .oldFromDate(history.getOldFromDate())
+                .oldFromTime(history.getOldFromTime())
+                .oldToDate(history.getOldToDate())
+                .oldToTime(history.getOldToTime())
+                .oldLeaveTypeId(history.getOldLeaveTypeId())
+                .oldLeaveDays(history.getOldLeaveDays())
+                .oldIsHalfDay(history.getOldIsHalfDay())
+                .oldHalfDayLeaveType(history.getOldHalfDayLeaveType())
+                .oldLeaveReason(history.getOldLeaveReason())
+                .oldAddress(history.getOldAddress())
+                .newFromDate(history.getNewFromDate())
+                .newFromTime(history.getNewFromTime())
+                .newToDate(history.getNewToDate())
+                .newToTime(history.getNewToTime())
+                .newLeaveTypeId(history.getNewLeaveTypeId())
+                .newLeaveDays(history.getNewLeaveDays())
+                .newIsHalfDay(history.getNewIsHalfDay())
+                .newHalfDayLeaveType(history.getNewHalfDayLeaveType())
+                .newLeaveReason(history.getNewLeaveReason())
+                .newAddress(history.getNewAddress())
+                .build();
+
+        // Get admin name
+        UserAccount adminAccount = userAccountRepository.findByAccountIdAndIsActive(history.getUpdatedByAccountId(), true);
+        if (adminAccount != null) {
+            response.setUpdatedByName(adminAccount.getFirstName() + " " + adminAccount.getLastName());
+        }
+
+        // Get employee details from leave application
+        LeaveApplication leaveApplication = leaveApplicationRepository.findByLeaveApplicationId(history.getLeaveApplicationId());
+        if (leaveApplication != null) {
+            response.setEmployeeAccountId(leaveApplication.getAccountId());
+            UserAccount employeeAccount = userAccountRepository.findByAccountIdAndIsActive(leaveApplication.getAccountId(), true);
+            if (employeeAccount != null) {
+                response.setEmployeeName(employeeAccount.getFirstName() + " " + employeeAccount.getLastName());
+            }
+        }
+
+        // Get leave type names
+        response.setOldLeaveTypeName(getLeaveTypeName(history.getOldLeaveTypeId()));
+        response.setNewLeaveTypeName(getLeaveTypeName(history.getNewLeaveTypeId()));
+
+        return response;
+    }
+
+    /**
+     * Build LeaveApplicationResponse from LeaveApplication entity.
+     */
+    private LeaveApplicationResponse buildLeaveApplicationResponse(LeaveApplication leaveApplication) {
+        LeaveApplicationResponse response = new LeaveApplicationResponse();
+        response.setLeaveApplicationId(leaveApplication.getLeaveApplicationId());
+        response.setAccountId(leaveApplication.getAccountId());
+        response.setLeaveTypeId(leaveApplication.getLeaveTypeId());
+        response.setLeaveApplicationStatusId(leaveApplication.getLeaveApplicationStatusId());
+        response.setFromDate(leaveApplication.getFromDate());
+        response.setFromTime(leaveApplication.getFromTime());
+        response.setToDate(leaveApplication.getToDate());
+        response.setToTime(leaveApplication.getToTime());
+        response.setLeaveReason(leaveApplication.getLeaveReason());
+        response.setApproverReason(leaveApplication.getApproverReason());
+        response.setApproverAccountId(leaveApplication.getApproverAccountId());
+        response.setPhone(leaveApplication.getPhone());
+        response.setAddress(leaveApplication.getAddress());
+        response.setNumberOfLeaveDays(leaveApplication.getNumberOfLeaveDays());
+        response.setIsLeaveForHalfDay(leaveApplication.getIsLeaveForHalfDay());
+        response.setHalfDayLeaveType(leaveApplication.getHalfDayLeaveType());
+        return response;
+    }
+
+    /**
+     * Get leave type name from leave type ID.
+     */
+    private String getLeaveTypeName(Short leaveTypeId) {
+        if (leaveTypeId == null) {
+            return null;
+        }
+        if (leaveTypeId.equals(Constants.TIME_OFF_LEAVE_TYPE_ID)) {
+            return "Time Off";
+        } else if (leaveTypeId.equals(Constants.SICK_LEAVE_TYPE_ID)) {
+            return "Sick Leave";
+        }
+        return "Unknown";
     }
 }
 
