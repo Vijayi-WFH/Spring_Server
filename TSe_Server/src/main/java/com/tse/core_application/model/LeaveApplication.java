@@ -110,4 +110,8 @@ public class LeaveApplication {
     private Boolean isSprintCapacityAdjustment;
 
     private LocalDate expiryLeaveDate;
+
+    // Soft delete flag - when Org Admin deletes a consumed leave
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
 }

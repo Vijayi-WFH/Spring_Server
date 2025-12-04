@@ -3576,6 +3576,133 @@ public class NotificationService {
         newNotification.setCategoryId(NotificationTypeToCategory.LEAVE_EXPIRED.getCategoryId());
         return notificationRepository.save(newNotification);
     }
+
+    // ==================== CONSUMED LEAVE EDIT/DELETE NOTIFICATIONS ====================
+
+    /**
+     * Send notification to employee when their consumed leave is edited by admin.
+     * Includes old and new values and the reason for edit.
+     *
+     * @param leaveApplication The leave application that was edited
+     * @param history The history record with old/new values
+     * @param adminAccountId The admin who made the edit
+     */
+    public void notifyForConsumedLeaveEdit(LeaveApplication leaveApplication, LeaveApplicationHistory history, Long adminAccountId) {
+        try {
+            // Get admin name
+            UserAccount adminAccount = userAccountRepository.findByAccountIdAndIsActive(adminAccountId, true);
+            String adminName = adminAccount != null
+                    ? adminAccount.getFirstName() + " " + (adminAccount.getLastName() != null ? adminAccount.getLastName() : "")
+                    : "Admin";
+
+            // Get employee account
+            UserAccount employeeAccount = userAccountRepository.findByAccountIdAndIsActive(leaveApplication.getAccountId(), true);
+            if (employeeAccount == null) {
+                logger.warn("Employee account not found for leave edit notification. AccountId: {}", leaveApplication.getAccountId());
+                return;
+            }
+
+            // Create notification
+            Notification notification = new Notification();
+            notification.setAccountId(employeeAccount);
+            notification.setLeaveApplicationId(leaveApplication.getLeaveApplicationId());
+            notification.setCategoryId(NotificationTypeToCategory.LEAVE_CANCELLED.getCategoryId()); // Using same category for leave modifications
+
+            // Set title and body
+            String title = "Leave Edited by Admin";
+            StringBuilder body = new StringBuilder();
+            body.append("Your consumed leave has been edited by ").append(adminName).append(".\n");
+            body.append("Reason: ").append(history.getReason()).append("\n\n");
+
+            // Add changes summary
+            if (history.getOldFromDate() != null && history.getNewFromDate() != null &&
+                !history.getOldFromDate().equals(history.getNewFromDate())) {
+                body.append("From Date: ").append(history.getOldFromDate()).append(" → ").append(history.getNewFromDate()).append("\n");
+            }
+            if (history.getOldToDate() != null && history.getNewToDate() != null &&
+                !history.getOldToDate().equals(history.getNewToDate())) {
+                body.append("To Date: ").append(history.getOldToDate()).append(" → ").append(history.getNewToDate()).append("\n");
+            }
+            if (history.getOldLeaveDays() != null && history.getNewLeaveDays() != null &&
+                !history.getOldLeaveDays().equals(history.getNewLeaveDays())) {
+                body.append("Leave Days: ").append(history.getOldLeaveDays()).append(" → ").append(history.getNewLeaveDays()).append("\n");
+            }
+
+            notification.setNotificationTitle(title);
+            notification.setNotificationBody(body.toString());
+
+            // Set payload
+            Payload payload = new Payload();
+            payload.setTitle(title);
+            payload.setBody(body.toString());
+            payload.setLeaveApplicationId(String.valueOf(leaveApplication.getLeaveApplicationId()));
+            notification.setPayload(gson.toJson(payload));
+
+            notificationRepository.save(notification);
+            logger.info("Notification sent for consumed leave edit. LeaveApplicationId: {}, EmployeeAccountId: {}",
+                       leaveApplication.getLeaveApplicationId(), leaveApplication.getAccountId());
+        } catch (Exception e) {
+            logger.error("Error sending notification for consumed leave edit: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Send notification to employee when their consumed leave is deleted by admin.
+     * Includes the deleted leave details and the reason for deletion.
+     *
+     * @param leaveApplication The leave application that was deleted
+     * @param history The history record with old values
+     * @param adminAccountId The admin who made the deletion
+     */
+    public void notifyForConsumedLeaveDelete(LeaveApplication leaveApplication, LeaveApplicationHistory history, Long adminAccountId) {
+        try {
+            // Get admin name
+            UserAccount adminAccount = userAccountRepository.findByAccountIdAndIsActive(adminAccountId, true);
+            String adminName = adminAccount != null
+                    ? adminAccount.getFirstName() + " " + (adminAccount.getLastName() != null ? adminAccount.getLastName() : "")
+                    : "Admin";
+
+            // Get employee account
+            UserAccount employeeAccount = userAccountRepository.findByAccountIdAndIsActive(leaveApplication.getAccountId(), true);
+            if (employeeAccount == null) {
+                logger.warn("Employee account not found for leave delete notification. AccountId: {}", leaveApplication.getAccountId());
+                return;
+            }
+
+            // Create notification
+            Notification notification = new Notification();
+            notification.setAccountId(employeeAccount);
+            notification.setLeaveApplicationId(leaveApplication.getLeaveApplicationId());
+            notification.setCategoryId(NotificationTypeToCategory.LEAVE_CANCELLED.getCategoryId());
+
+            // Set title and body
+            String title = "Leave Deleted by Admin";
+            StringBuilder body = new StringBuilder();
+            body.append("Your consumed leave has been deleted by ").append(adminName).append(".\n");
+            body.append("Reason: ").append(history.getReason()).append("\n\n");
+            body.append("Deleted Leave Details:\n");
+            body.append("From: ").append(history.getOldFromDate()).append("\n");
+            body.append("To: ").append(history.getOldToDate()).append("\n");
+            body.append("Leave Days: ").append(history.getOldLeaveDays()).append("\n");
+            body.append("\nYour leave balance has been restored.");
+
+            notification.setNotificationTitle(title);
+            notification.setNotificationBody(body.toString());
+
+            // Set payload
+            Payload payload = new Payload();
+            payload.setTitle(title);
+            payload.setBody(body.toString());
+            payload.setLeaveApplicationId(String.valueOf(leaveApplication.getLeaveApplicationId()));
+            notification.setPayload(gson.toJson(payload));
+
+            notificationRepository.save(notification);
+            logger.info("Notification sent for consumed leave delete. LeaveApplicationId: {}, EmployeeAccountId: {}",
+                       leaveApplication.getLeaveApplicationId(), leaveApplication.getAccountId());
+        } catch (Exception e) {
+            logger.error("Error sending notification for consumed leave delete: {}", e.getMessage());
+        }
+    }
 }
 
 

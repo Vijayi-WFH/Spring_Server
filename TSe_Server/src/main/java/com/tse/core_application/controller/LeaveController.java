@@ -1544,6 +1544,138 @@ public class LeaveController {
             return CustomResponseHandler.generateCustomResponse(HttpStatus.OK, com.tse.core_application.constants.Constants.FormattedResponse.SUCCESS, response);
 
     }
+
+    // ==================== CONSUMED LEAVE EDIT/DELETE ENDPOINTS ====================
+
+    /**
+     * Edit a consumed leave by Org Admin.
+     * Only consumed leaves (statusId = 8) can be edited through this API.
+     * Creates audit trail in LeaveApplicationHistory.
+     *
+     * @param request Edit request with updated fields and mandatory reason
+     * @return Updated leave application response
+     */
+    @PatchMapping("/editConsumedLeave")
+    @Transactional
+    public ResponseEntity<Object> editConsumedLeave(
+            @RequestBody @Valid EditConsumedLeaveRequest request,
+            @RequestHeader(name = "screenName") String screenName,
+            @RequestHeader(name = "timeZone") String timeZone,
+            @RequestHeader(name = "accountIds") String accountIds,
+            HttpServletRequest httpRequest) {
+        try {
+            long startTime = System.currentTimeMillis();
+            String jwtToken = httpRequest.getHeader("Authorization").substring(7);
+            String tokenUsername = jwtUtil.getUsernameFromToken(jwtToken);
+            User foundUser = userService.getUserByUserName(tokenUsername);
+            Long adminAccountId = requestHeaderHandler.getAccountIdFromRequestHeader(accountIds);
+            ThreadContext.put("accountId", adminAccountId.toString());
+            ThreadContext.put("userId", foundUser.getUserId().toString());
+            ThreadContext.put("requestOriginatingPage", screenName);
+            logger.info("Entered editConsumedLeave method ...");
+
+            LeaveApplicationResponse response = leaveService.editConsumedLeave(request, adminAccountId);
+
+            logger.info("Exiting editConsumedLeave method ...");
+            long estimatedTime = System.currentTimeMillis() - startTime;
+            ThreadContext.put("systemResponseTime", String.valueOf(estimatedTime));
+            ThreadContext.clearMap();
+
+            return CustomResponseHandler.generateCustomResponse(HttpStatus.OK, com.tse.core_application.constants.Constants.FormattedResponse.SUCCESS, response);
+        } catch (Exception e) {
+            String allStackTraces = StackTraceHandler.getAllStackTraces(e);
+            logger.error("Error in editConsumedLeave: {}", allStackTraces);
+            ThreadContext.clearMap();
+            throw e;
+        }
+    }
+
+    /**
+     * Delete a consumed leave by Org Admin (soft delete).
+     * Only consumed leaves (statusId = 8) can be deleted through this API.
+     * Creates audit trail in LeaveApplicationHistory.
+     * Restores leave balance to employee.
+     *
+     * @param request Delete request with mandatory reason
+     * @return Success response
+     */
+    @DeleteMapping("/deleteConsumedLeave")
+    @Transactional
+    public ResponseEntity<Object> deleteConsumedLeave(
+            @RequestBody @Valid DeleteConsumedLeaveRequest request,
+            @RequestHeader(name = "screenName") String screenName,
+            @RequestHeader(name = "timeZone") String timeZone,
+            @RequestHeader(name = "accountIds") String accountIds,
+            HttpServletRequest httpRequest) {
+        try {
+            long startTime = System.currentTimeMillis();
+            String jwtToken = httpRequest.getHeader("Authorization").substring(7);
+            String tokenUsername = jwtUtil.getUsernameFromToken(jwtToken);
+            User foundUser = userService.getUserByUserName(tokenUsername);
+            Long adminAccountId = requestHeaderHandler.getAccountIdFromRequestHeader(accountIds);
+            ThreadContext.put("accountId", adminAccountId.toString());
+            ThreadContext.put("userId", foundUser.getUserId().toString());
+            ThreadContext.put("requestOriginatingPage", screenName);
+            logger.info("Entered deleteConsumedLeave method ...");
+
+            leaveService.deleteConsumedLeave(request, adminAccountId);
+
+            logger.info("Exiting deleteConsumedLeave method ...");
+            long estimatedTime = System.currentTimeMillis() - startTime;
+            ThreadContext.put("systemResponseTime", String.valueOf(estimatedTime));
+            ThreadContext.clearMap();
+
+            return CustomResponseHandler.generateCustomResponse(HttpStatus.OK, com.tse.core_application.constants.Constants.FormattedResponse.SUCCESS, "Leave deleted successfully");
+        } catch (Exception e) {
+            String allStackTraces = StackTraceHandler.getAllStackTraces(e);
+            logger.error("Error in deleteConsumedLeave: {}", allStackTraces);
+            ThreadContext.clearMap();
+            throw e;
+        }
+    }
+
+    /**
+     * Get leave application history/audit trail.
+     * Admin can see all history (with optional employee filter).
+     * Employee can only see their own history.
+     *
+     * @param request Filter criteria (accountId, fromDate, toDate, leaveApplicationId)
+     * @return List of history records with old/new values side-by-side
+     */
+    @PostMapping("/getLeaveApplicationHistory")
+    public ResponseEntity<Object> getLeaveApplicationHistory(
+            @RequestBody LeaveApplicationHistoryRequest request,
+            @RequestHeader(name = "screenName") String screenName,
+            @RequestHeader(name = "timeZone") String timeZone,
+            @RequestHeader(name = "accountIds") String accountIds,
+            HttpServletRequest httpRequest) {
+        try {
+            long startTime = System.currentTimeMillis();
+            String jwtToken = httpRequest.getHeader("Authorization").substring(7);
+            String tokenUsername = jwtUtil.getUsernameFromToken(jwtToken);
+            User foundUser = userService.getUserByUserName(tokenUsername);
+            Long requestingAccountId = requestHeaderHandler.getAccountIdFromRequestHeader(accountIds);
+            ThreadContext.put("accountId", requestingAccountId.toString());
+            ThreadContext.put("userId", foundUser.getUserId().toString());
+            ThreadContext.put("requestOriginatingPage", screenName);
+            logger.info("Entered getLeaveApplicationHistory method ...");
+
+            List<LeaveApplicationHistoryResponse> response = leaveService.getLeaveApplicationHistory(
+                    request, requestingAccountId, null);
+
+            logger.info("Exiting getLeaveApplicationHistory method ...");
+            long estimatedTime = System.currentTimeMillis() - startTime;
+            ThreadContext.put("systemResponseTime", String.valueOf(estimatedTime));
+            ThreadContext.clearMap();
+
+            return CustomResponseHandler.generateCustomResponse(HttpStatus.OK, com.tse.core_application.constants.Constants.FormattedResponse.SUCCESS, response);
+        } catch (Exception e) {
+            String allStackTraces = StackTraceHandler.getAllStackTraces(e);
+            logger.error("Error in getLeaveApplicationHistory: {}", allStackTraces);
+            ThreadContext.clearMap();
+            throw e;
+        }
+    }
 }
 
 
