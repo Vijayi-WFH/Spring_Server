@@ -1569,7 +1569,8 @@ public class LeaveController {
             // Claude change: Log the edit consumed leave request
             logger.info("Entered editConsumedLeave method for leaveId: {}", editConsumedLeaveRequest.getLeaveApplicationId());
 
-            ResponseEntity<String> response = leaveService.editConsumedLeave(editConsumedLeaveRequest, accountIds);
+            // Claude change: PT-14409 - Pass timeZone for sprint capacity updates
+            ResponseEntity<String> response = leaveService.editConsumedLeave(editConsumedLeaveRequest, accountIds, timeZone);
 
             logger.info("Exiting editConsumedLeave method ...");
             long estimatedTime = System.currentTimeMillis() - startTime;
@@ -1611,7 +1612,8 @@ public class LeaveController {
             // Claude change: Log the delete consumed leave request
             logger.info("Entered deleteConsumedLeave method for leaveId: {}", deleteConsumedLeaveRequest.getLeaveApplicationId());
 
-            ResponseEntity<String> response = leaveService.deleteConsumedLeave(deleteConsumedLeaveRequest, accountIds);
+            // Claude change: PT-14409 - Pass timeZone for sprint capacity updates
+            ResponseEntity<String> response = leaveService.deleteConsumedLeave(deleteConsumedLeaveRequest, accountIds, timeZone);
 
             logger.info("Exiting deleteConsumedLeave method ...");
             long estimatedTime = System.currentTimeMillis() - startTime;

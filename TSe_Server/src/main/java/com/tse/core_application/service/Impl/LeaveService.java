@@ -1663,11 +1663,13 @@ public class LeaveService {
      * Claude change: PT-14409 - Edit a consumed leave application
      * Only Org Admin or Backup Org Admin can edit consumed leaves
      * Creates an audit history record with old and new values
+     * Also updates impacted areas: timesheet, sprint capacity, and leave balance
      * @param request EditConsumedLeaveRequest with new values and mandatory reason
      * @param accountIds Account ID of the requesting user (from header)
+     * @param timeZone User's timezone for capacity calculations
      * @return ResponseEntity with success message
      */
-    public ResponseEntity<String> editConsumedLeave(EditConsumedLeaveRequest request, String accountIds) {
+    public ResponseEntity<String> editConsumedLeave(EditConsumedLeaveRequest request, String accountIds, String timeZone) {
         // Claude change: Validate Org Admin access
         if (!isOrgAdminOrBackUpAdmin(null, null, Long.valueOf(accountIds))) {
             throw new ValidationFailedException("You're not authorized to edit consumed leaves");
@@ -1693,6 +1695,12 @@ public class LeaveService {
         if (request.getReason() == null || request.getReason().trim().isEmpty()) {
             throw new ValidationFailedException("Reason for edit is mandatory");
         }
+
+        // Claude change: PT-14409 - Store old values for impacted area calculations
+        LocalDate oldFromDate = leaveApplication.getFromDate();
+        LocalDate oldToDate = leaveApplication.getToDate();
+        Float oldLeaveDays = leaveApplication.getNumberOfLeaveDays();
+        Short oldLeaveTypeId = leaveApplication.getLeaveTypeId();
 
         // Claude change: Create history record with old values
         LeaveApplicationHistory history = LeaveApplicationHistory.builder()
@@ -1742,6 +1750,12 @@ public class LeaveService {
             leaveApplication.setHalfDayLeaveType(request.getHalfDayLeaveType());
         }
 
+        // Claude change: PT-14409 - Recalculate numberOfLeaveDays if dates or half day changed
+        if (request.getFromDate() != null || request.getToDate() != null || request.getIsHalfDay() != null) {
+            Float newLeaveDays = calculateLeaveDays(leaveApplication);
+            leaveApplication.setNumberOfLeaveDays(newLeaveDays);
+        }
+
         // Claude change: Save the updated leave application
         leaveApplicationRepository.save(leaveApplication);
 
@@ -1760,23 +1774,152 @@ public class LeaveService {
         // Claude change: Save the history record
         leaveApplicationHistoryRepository.save(history);
 
+        // Claude change: PT-14409 - Update impacted areas
+
+        // 1. Update Leave Balance if leave days or leave type changed
+        Float newLeaveDays = leaveApplication.getNumberOfLeaveDays();
+        Short newLeaveTypeId = leaveApplication.getLeaveTypeId();
+        updateLeaveBalanceOnEdit(leaveApplication.getAccountId(), oldLeaveTypeId, newLeaveTypeId,
+                oldLeaveDays, newLeaveDays, oldFromDate.getYear());
+
+        // 2. Update Timesheet if dates changed
+        boolean datesChanged = !oldFromDate.equals(leaveApplication.getFromDate()) ||
+                               !oldToDate.equals(leaveApplication.getToDate());
+        if (datesChanged) {
+            // Remove old timesheet entries and timesheet service will recreate on next sync
+            timeSheetService.removeTimeSheetForLeaveCancellation(leaveApplication.getLeaveApplicationId());
+            logger.info("PT-14409: Removed old timesheet entries for edited leave. LeaveId: {}",
+                    leaveApplication.getLeaveApplicationId());
+        }
+
+        // 3. Update Sprint Capacity automatically
+        // Update capacity for both old and new date ranges
+        updateSprintCapacityForEditedLeave(leaveApplication, oldFromDate, oldToDate, timeZone);
+
         // Claude change: TODO - Send notification to the employee (will be added in notification step)
 
-        logger.info("Consumed leave edited successfully. LeaveId: {}, EditedBy: {}",
+        logger.info("Consumed leave edited successfully with impacted areas updated. LeaveId: {}, EditedBy: {}",
                 request.getLeaveApplicationId(), accountIds);
 
         return ResponseEntity.ok("Consumed leave edited successfully");
     }
 
     /**
+     * Claude change: PT-14409 - Calculate leave days based on from/to date and half day setting
+     */
+    private Float calculateLeaveDays(LeaveApplication leaveApplication) {
+        long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(
+                leaveApplication.getFromDate(), leaveApplication.getToDate()) + 1;
+        if (Boolean.TRUE.equals(leaveApplication.getIsLeaveForHalfDay())) {
+            return 0.5f;
+        }
+        return (float) daysBetween;
+    }
+
+    /**
+     * Claude change: PT-14409 - Update leave balance when consumed leave is edited
+     * Handles both same leave type edits (just adjust days) and different leave type edits (restore old, deduct new)
+     */
+    private void updateLeaveBalanceOnEdit(Long accountId, Short oldLeaveTypeId, Short newLeaveTypeId,
+                                          Float oldLeaveDays, Float newLeaveDays, int year) {
+        Short calenderYear = (short) year;
+
+        if (Objects.equals(oldLeaveTypeId, newLeaveTypeId)) {
+            // Same leave type - just adjust the difference
+            Float daysDiff = oldLeaveDays - newLeaveDays;
+            if (daysDiff != 0) {
+                LeaveRemaining leaveRemaining = leaveRemainingRepository
+                        .findByAccountIdAndLeaveTypeIdAndCalenderYear(accountId, oldLeaveTypeId, calenderYear);
+                if (leaveRemaining != null) {
+                    leaveRemaining.setLeaveRemaining(leaveRemaining.getLeaveRemaining() + daysDiff);
+                    leaveRemaining.setLeaveTaken(leaveRemaining.getLeaveTaken() - daysDiff);
+                    leaveRemainingRepository.save(leaveRemaining);
+                    logger.info("PT-14409: Updated leave balance for same leave type. AccountId: {}, TypeId: {}, DaysDiff: {}",
+                            accountId, oldLeaveTypeId, daysDiff);
+                }
+            }
+        } else {
+            // Different leave type - restore old balance and deduct from new
+            // Restore old leave type balance
+            LeaveRemaining oldLeaveRemaining = leaveRemainingRepository
+                    .findByAccountIdAndLeaveTypeIdAndCalenderYear(accountId, oldLeaveTypeId, calenderYear);
+            if (oldLeaveRemaining != null) {
+                oldLeaveRemaining.setLeaveRemaining(oldLeaveRemaining.getLeaveRemaining() + oldLeaveDays);
+                oldLeaveRemaining.setLeaveTaken(oldLeaveRemaining.getLeaveTaken() - oldLeaveDays);
+                leaveRemainingRepository.save(oldLeaveRemaining);
+                logger.info("PT-14409: Restored old leave type balance. AccountId: {}, TypeId: {}, Days: {}",
+                        accountId, oldLeaveTypeId, oldLeaveDays);
+            }
+
+            // Deduct from new leave type balance
+            LeaveRemaining newLeaveRemaining = leaveRemainingRepository
+                    .findByAccountIdAndLeaveTypeIdAndCalenderYear(accountId, newLeaveTypeId, calenderYear);
+            if (newLeaveRemaining != null) {
+                newLeaveRemaining.setLeaveRemaining(newLeaveRemaining.getLeaveRemaining() - newLeaveDays);
+                newLeaveRemaining.setLeaveTaken(newLeaveRemaining.getLeaveTaken() + newLeaveDays);
+                leaveRemainingRepository.save(newLeaveRemaining);
+                logger.info("PT-14409: Deducted from new leave type balance. AccountId: {}, TypeId: {}, Days: {}",
+                        accountId, newLeaveTypeId, newLeaveDays);
+            }
+        }
+    }
+
+    /**
+     * Claude change: PT-14409 - Update sprint capacity for edited leave
+     * Recalculates capacity for sprints affected by both old and new date ranges
+     */
+    private void updateSprintCapacityForEditedLeave(LeaveApplication leaveApplication,
+                                                     LocalDate oldFromDate, LocalDate oldToDate, String timeZone) {
+        Long accountId = leaveApplication.getAccountId();
+        LocalDate newFromDate = leaveApplication.getFromDate();
+        LocalDate newToDate = leaveApplication.getToDate();
+
+        List<Long> userTeamIdsList = accessDomainRepository.findTeamIdsByAccountIdsAndIsActiveTrue(List.of(accountId));
+        if (!userTeamIdsList.isEmpty()) {
+            Set<Sprint> allAffectedSprints = new HashSet<>();
+
+            // Find sprints affected by old date range
+            LocalDate currentDate = oldFromDate;
+            while (!currentDate.isAfter(oldToDate)) {
+                allAffectedSprints.addAll(sprintRepository.getCustomAllActiveSprintsForEntitiesAndContainsLeaveDate(
+                        userTeamIdsList, Constants.EntityTypes.TEAM, currentDate));
+                allAffectedSprints.addAll(sprintRepository.getCustomSprintsForEntitiesAndContainsDate(
+                        userTeamIdsList, Constants.EntityTypes.TEAM, currentDate,
+                        List.of(Constants.SprintStatusEnum.NOT_STARTED.getSprintStatusId())));
+                currentDate = currentDate.plusDays(1);
+            }
+
+            // Find sprints affected by new date range (in case dates changed)
+            currentDate = newFromDate;
+            while (!currentDate.isAfter(newToDate)) {
+                allAffectedSprints.addAll(sprintRepository.getCustomAllActiveSprintsForEntitiesAndContainsLeaveDate(
+                        userTeamIdsList, Constants.EntityTypes.TEAM, currentDate));
+                allAffectedSprints.addAll(sprintRepository.getCustomSprintsForEntitiesAndContainsDate(
+                        userTeamIdsList, Constants.EntityTypes.TEAM, currentDate,
+                        List.of(Constants.SprintStatusEnum.NOT_STARTED.getSprintStatusId())));
+                currentDate = currentDate.plusDays(1);
+            }
+
+            // Recalculate capacity for all affected sprints
+            for (Sprint sprint : allAffectedSprints) {
+                capacityService.updateSprintAndUserCapacityOnLeaveCancellation(sprint, accountId, timeZone);
+            }
+            logger.info("PT-14409: Updated sprint capacity for {} sprints after leave edit. LeaveId: {}",
+                    allAffectedSprints.size(), leaveApplication.getLeaveApplicationId());
+        }
+    }
+
+    /**
      * Claude change: PT-14409 - Delete (soft delete) a consumed leave application
      * Only Org Admin or Backup Org Admin can delete consumed leaves
      * Creates an audit history record with old values
+     * Also updates impacted areas: timesheet, sprint capacity, and leave balance
      * @param request DeleteConsumedLeaveRequest with leave ID and mandatory reason
      * @param accountIds Account ID of the requesting user (from header)
+     * @param timeZone User's timezone for capacity calculations
      * @return ResponseEntity with success message
      */
-    public ResponseEntity<String> deleteConsumedLeave(DeleteConsumedLeaveRequest request, String accountIds) {
+    public ResponseEntity<String> deleteConsumedLeave(DeleteConsumedLeaveRequest request, String accountIds, String timeZone) {
         // Claude change: Validate Org Admin access
         if (!isOrgAdminOrBackUpAdmin(null, null, Long.valueOf(accountIds))) {
             throw new ValidationFailedException("You're not authorized to delete consumed leaves");
@@ -1802,6 +1945,13 @@ public class LeaveService {
         if (request.getReason() == null || request.getReason().trim().isEmpty()) {
             throw new ValidationFailedException("Reason for deletion is mandatory");
         }
+
+        // Claude change: PT-14409 - Store values for impacted area calculations before delete
+        LocalDate fromDate = leaveApplication.getFromDate();
+        LocalDate toDate = leaveApplication.getToDate();
+        Float leaveDays = leaveApplication.getNumberOfLeaveDays();
+        Short leaveTypeId = leaveApplication.getLeaveTypeId();
+        Long employeeAccountId = leaveApplication.getAccountId();
 
         // Claude change: Create history record with old values (new values will be null for DELETE)
         LeaveApplicationHistory history = LeaveApplicationHistory.builder()
@@ -1833,12 +1983,72 @@ public class LeaveService {
         // Claude change: Save the history record
         leaveApplicationHistoryRepository.save(history);
 
+        // Claude change: PT-14409 - Update impacted areas
+
+        // 1. Restore Leave Balance - add back consumed days to leaveRemaining
+        updateLeaveBalanceOnDelete(employeeAccountId, leaveTypeId, leaveDays, fromDate.getYear());
+
+        // 2. Remove Timesheet entries for deleted leave
+        timeSheetService.removeTimeSheetForLeaveCancellation(leaveApplication.getLeaveApplicationId());
+        logger.info("PT-14409: Removed timesheet entries for deleted leave. LeaveId: {}",
+                leaveApplication.getLeaveApplicationId());
+
+        // 3. Update Sprint Capacity automatically - recalculate for affected sprints
+        updateSprintCapacityForDeletedLeave(employeeAccountId, fromDate, toDate, timeZone);
+
         // Claude change: TODO - Send notification to the employee (will be added in notification step)
 
-        logger.info("Consumed leave deleted successfully. LeaveId: {}, DeletedBy: {}",
+        logger.info("Consumed leave deleted successfully with impacted areas updated. LeaveId: {}, DeletedBy: {}",
                 request.getLeaveApplicationId(), accountIds);
 
         return ResponseEntity.ok("Consumed leave deleted successfully");
+    }
+
+    /**
+     * Claude change: PT-14409 - Restore leave balance when consumed leave is deleted
+     * Adds back the consumed days to leaveRemaining and reduces leaveTaken
+     */
+    private void updateLeaveBalanceOnDelete(Long accountId, Short leaveTypeId, Float leaveDays, int year) {
+        Short calenderYear = (short) year;
+        LeaveRemaining leaveRemaining = leaveRemainingRepository
+                .findByAccountIdAndLeaveTypeIdAndCalenderYear(accountId, leaveTypeId, calenderYear);
+
+        if (leaveRemaining != null) {
+            leaveRemaining.setLeaveRemaining(leaveRemaining.getLeaveRemaining() + leaveDays);
+            leaveRemaining.setLeaveTaken(leaveRemaining.getLeaveTaken() - leaveDays);
+            leaveRemainingRepository.save(leaveRemaining);
+            logger.info("PT-14409: Restored leave balance after delete. AccountId: {}, TypeId: {}, Days: {}",
+                    accountId, leaveTypeId, leaveDays);
+        }
+    }
+
+    /**
+     * Claude change: PT-14409 - Update sprint capacity when consumed leave is deleted
+     * Recalculates capacity for all sprints that overlap with the deleted leave dates
+     */
+    private void updateSprintCapacityForDeletedLeave(Long accountId, LocalDate fromDate, LocalDate toDate, String timeZone) {
+        List<Long> userTeamIdsList = accessDomainRepository.findTeamIdsByAccountIdsAndIsActiveTrue(List.of(accountId));
+        if (!userTeamIdsList.isEmpty()) {
+            Set<Sprint> allAffectedSprints = new HashSet<>();
+
+            // Find all sprints affected by the deleted leave date range
+            LocalDate currentDate = fromDate;
+            while (!currentDate.isAfter(toDate)) {
+                allAffectedSprints.addAll(sprintRepository.getCustomAllActiveSprintsForEntitiesAndContainsLeaveDate(
+                        userTeamIdsList, Constants.EntityTypes.TEAM, currentDate));
+                allAffectedSprints.addAll(sprintRepository.getCustomSprintsForEntitiesAndContainsDate(
+                        userTeamIdsList, Constants.EntityTypes.TEAM, currentDate,
+                        List.of(Constants.SprintStatusEnum.NOT_STARTED.getSprintStatusId())));
+                currentDate = currentDate.plusDays(1);
+            }
+
+            // Recalculate capacity for all affected sprints
+            for (Sprint sprint : allAffectedSprints) {
+                capacityService.updateSprintAndUserCapacityOnLeaveCancellation(sprint, accountId, timeZone);
+            }
+            logger.info("PT-14409: Updated sprint capacity for {} sprints after leave delete. AccountId: {}",
+                    allAffectedSprints.size(), accountId);
+        }
     }
 
     /**
