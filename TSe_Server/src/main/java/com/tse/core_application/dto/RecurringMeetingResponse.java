@@ -1,6 +1,7 @@
 package com.tse.core_application.dto;
 
 import com.tse.core_application.dto.label.LabelResponse;
+import com.tse.core_application.dto.meeting.MeetingLinkInfo;
 import com.tse.core_application.model.Attendee;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -47,5 +48,9 @@ public class RecurringMeetingResponse {
     private Integer referenceEntityTypeId;
     private String entityName;
     private List<LabelResponse> labels;
+
+    // added for PT-13330: Meeting link display and toggle
+    private Boolean isExternalLink;
+    private MeetingLinkInfo meetingLinkInfo;
 
 }

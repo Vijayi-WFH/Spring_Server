@@ -1,5 +1,6 @@
 package com.tse.core_application.dto;
 
+import com.tse.core_application.dto.meeting.MeetingLinkInfo;
 import com.tse.core_application.model.Attendee;
 import lombok.*;
 
@@ -37,5 +38,8 @@ public class AllMeetingsCondensedResponse {
 
     private List<Attendee> attendeeResponseList;
 
+    // added for PT-13330: Meeting link display and toggle
+    private Boolean isExternalLink;
+    private MeetingLinkInfo meetingLinkInfo;
 
 }

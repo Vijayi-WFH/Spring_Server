@@ -174,4 +174,7 @@ public class Meeting {
     @Column(name = "view_transcription")
     private Boolean viewTranscription = false;
 
+    @Column(name = "is_external_link")
+    private Boolean isExternalLink = false;
+
 }

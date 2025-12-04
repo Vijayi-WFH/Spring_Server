@@ -17,6 +17,7 @@ import com.tse.core_application.model.User;
 import com.tse.core_application.repository.*;
 import com.tse.core_application.utils.CommonUtils;
 import com.tse.core_application.utils.DateTimeUtils;
+import com.tse.core_application.utils.MeetingLinkClassifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -309,6 +310,13 @@ public class MeetingService {
         meetingResponse.setUploadFileForModelResponseList(getUploadedFileForModel (meetingDb, desiredTimeZone));
         meetingResponse.setViewTranscription(meetingDb.getViewTranscription());
 
+        // PT-13330: Set meeting link info
+        meetingResponse.setIsExternalLink(meetingDb.getIsExternalLink());
+        if (meetingDb.getMeetingKey() != null && !meetingDb.getMeetingKey().isBlank()) {
+            MeetingLinkInfo linkInfo = MeetingLinkClassifier.classify(meetingDb.getMeetingKey(), meetingDb.getIsExternalLink());
+            meetingResponse.setMeetingLinkInfo(linkInfo);
+        }
+
         return meetingResponse;
 
     }
@@ -408,6 +416,14 @@ public class MeetingService {
             }
             meetingResponse.setUploadFileForModelResponseList(getUploadedFileForModel(meetingDb, desiredTimeZone));
             meetingResponse.setViewTranscription(meetingDb.getViewTranscription());
+
+            // PT-13330: Set meeting link info
+            meetingResponse.setIsExternalLink(meetingDb.getIsExternalLink());
+            if (meetingDb.getMeetingKey() != null && !meetingDb.getMeetingKey().isBlank()) {
+                MeetingLinkInfo linkInfo = MeetingLinkClassifier.classify(meetingDb.getMeetingKey(), meetingDb.getIsExternalLink());
+                meetingResponse.setMeetingLinkInfo(linkInfo);
+            }
+
             meetingResponses.add(meetingResponse);
         }
         return meetingResponses;
@@ -1661,6 +1677,13 @@ public class MeetingService {
             response.setEntityName(teamName);
         }
 
+        // PT-13330: Set meeting link info
+        response.setIsExternalLink(recurringMeetingSaved.getIsExternalLink());
+        if (recurringMeetingSaved.getMeetingKey() != null && !recurringMeetingSaved.getMeetingKey().isBlank()) {
+            MeetingLinkInfo linkInfo = MeetingLinkClassifier.classify(recurringMeetingSaved.getMeetingKey(), recurringMeetingSaved.getIsExternalLink());
+            response.setMeetingLinkInfo(linkInfo);
+        }
+
         return response;
     }
 
@@ -1885,6 +1908,13 @@ public class MeetingService {
                 }
 
                 meetingToGet.setAttendeeRequestList(attendeeListFromDb);
+            }
+
+            // PT-13330: Set meeting link info
+            meetingToGet.setIsExternalLink(foundMeetingDb.getIsExternalLink());
+            if (foundMeetingDb.getMeetingKey() != null && !foundMeetingDb.getMeetingKey().isBlank()) {
+                MeetingLinkInfo linkInfo = MeetingLinkClassifier.classify(foundMeetingDb.getMeetingKey(), foundMeetingDb.getIsExternalLink());
+                meetingToGet.setMeetingLinkInfo(linkInfo);
             }
 
             return meetingToGet;
@@ -2177,6 +2207,13 @@ public class MeetingService {
                         allMeetingsCondensedResponse.setEntityName(teamName);
                     }
 
+                    // PT-13330: Set meeting link info
+                    allMeetingsCondensedResponse.setIsExternalLink(recurringMeetingDb.getIsExternalLink());
+                    if (recurringMeetingDb.getMeetingKey() != null && !recurringMeetingDb.getMeetingKey().isBlank()) {
+                        MeetingLinkInfo linkInfo = MeetingLinkClassifier.classify(recurringMeetingDb.getMeetingKey(), recurringMeetingDb.getIsExternalLink());
+                        allMeetingsCondensedResponse.setMeetingLinkInfo(linkInfo);
+                    }
+
                     allMeetingsList.add(allMeetingsCondensedResponse);
                 }
 
@@ -2250,6 +2287,13 @@ public class MeetingService {
                      } else {
                          String orgName = organizationRepository.findOrganizationNameByOrgId(meeting.getOrgId());
                          allMeetingsCondensedResponse.setEntityName(orgName);
+                     }
+
+                     // PT-13330: Set meeting link info
+                     allMeetingsCondensedResponse.setIsExternalLink(meeting.getIsExternalLink());
+                     if (meeting.getMeetingKey() != null && !meeting.getMeetingKey().isBlank()) {
+                         MeetingLinkInfo linkInfo = MeetingLinkClassifier.classify(meeting.getMeetingKey(), meeting.getIsExternalLink());
+                         allMeetingsCondensedResponse.setMeetingLinkInfo(linkInfo);
                      }
 
                      allMeetingsList.add(allMeetingsCondensedResponse);
@@ -2471,6 +2515,13 @@ public class MeetingService {
         } else {
             String orgName = organizationRepository.findOrganizationNameByOrgId(recurringMeetingRequest.getOrgId());
             response.setEntityName(orgName);
+        }
+
+        // PT-13330: Set meeting link info
+        response.setIsExternalLink(recurringMeetingDb.getIsExternalLink());
+        if (recurringMeetingDb.getMeetingKey() != null && !recurringMeetingDb.getMeetingKey().isBlank()) {
+            MeetingLinkInfo linkInfo = MeetingLinkClassifier.classify(recurringMeetingDb.getMeetingKey(), recurringMeetingDb.getIsExternalLink());
+            response.setMeetingLinkInfo(linkInfo);
         }
 
         return response;
