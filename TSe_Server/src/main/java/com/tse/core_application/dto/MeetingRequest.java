@@ -67,4 +67,6 @@ public class MeetingRequest {
     private Integer meetingTypeId = MeetingType.MEETING.getValue(); // meeting type is meeting or collaboration
 
     private Boolean isFetched = false;
+
+    private Boolean isExternalLink = false;
 }

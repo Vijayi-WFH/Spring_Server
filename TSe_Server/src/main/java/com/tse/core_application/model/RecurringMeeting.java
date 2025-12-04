@@ -129,4 +129,7 @@ public class RecurringMeeting {
 
     @Column(name = "recurring_meeting_type_id")
     private Integer recurringMeetingTypeId = MeetingType.MEETING.getValue();
+
+    @Column(name = "is_external_link")
+    private Boolean isExternalLink = false;
 }

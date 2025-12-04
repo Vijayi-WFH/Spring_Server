@@ -62,4 +62,6 @@ public class RecurringMeetingRequest {
     private Integer recurWeek;
     private List<String> labelsToAdd;
     private Integer recurringMeetingTypeId = MeetingType.MEETING.getValue(); // meeting type is meeting or collaboration
+
+    private Boolean isExternalLink = false;
 }
