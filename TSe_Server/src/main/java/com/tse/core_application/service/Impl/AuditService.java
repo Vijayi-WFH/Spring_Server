@@ -715,4 +715,42 @@ public class AuditService {
         return auditRepository.save(auditToInsert);
     }
 
+    /**
+     * Claude change: PT-14409 - Audit method for editing consumed leave by Org Admin
+     * @param adminAccount The Org Admin who edited the leave
+     * @param leaveApplicationId The leave application ID being edited
+     * @param reason The reason for editing
+     * @return Audit record
+     */
+    public Audit auditForEditConsumedLeave(UserAccount adminAccount, Long leaveApplicationId, String reason) {
+        Audit auditToInsert = new Audit();
+        auditToInsert.setAccountId(adminAccount.getAccountId());
+        auditToInsert.setAffectedEntityId(leaveApplicationId);
+        auditToInsert.setAffectedEntityTypeId(Constants.EntityTypes.LEAVE);
+        auditToInsert.setUserId(adminAccount.getFkUserId().getUserId());
+        String messageForUser = "Consumed leave " + '"' + leaveApplicationId + '"' + " was edited by " +
+                adminAccount.getFirstName() + " " + adminAccount.getLastName() + ". Reason: " + reason;
+        auditToInsert.setMessageForUser(messageForUser);
+        return auditRepository.save(auditToInsert);
+    }
+
+    /**
+     * Claude change: PT-14409 - Audit method for deleting consumed leave by Org Admin
+     * @param adminAccount The Org Admin who deleted the leave
+     * @param leaveApplicationId The leave application ID being deleted
+     * @param reason The reason for deleting
+     * @return Audit record
+     */
+    public Audit auditForDeleteConsumedLeave(UserAccount adminAccount, Long leaveApplicationId, String reason) {
+        Audit auditToInsert = new Audit();
+        auditToInsert.setAccountId(adminAccount.getAccountId());
+        auditToInsert.setAffectedEntityId(leaveApplicationId);
+        auditToInsert.setAffectedEntityTypeId(Constants.EntityTypes.LEAVE);
+        auditToInsert.setUserId(adminAccount.getFkUserId().getUserId());
+        String messageForUser = "Consumed leave " + '"' + leaveApplicationId + '"' + " was deleted by " +
+                adminAccount.getFirstName() + " " + adminAccount.getLastName() + ". Reason: " + reason;
+        auditToInsert.setMessageForUser(messageForUser);
+        return auditRepository.save(auditToInsert);
+    }
+
 }

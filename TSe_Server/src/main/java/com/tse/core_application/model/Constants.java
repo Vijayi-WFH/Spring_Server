@@ -1098,6 +1098,11 @@ public class Constants {
         public static final Short CANCELLED_AFTER_APPROVAL_LEAVE_APPLICATION_STATUS_ID = 6;
         public static final Short LEAVE_APPLICATION_EXPIRED_STATUS_ID = 7;
         public static final Short CONSUMED_LEAVE_APPLICATION_STATUS_ID = 8;
+
+        // Claude change: PT-14409 - Added DELETED status for consumed leave deletion feature
+        // This status is used when Org Admin deletes a consumed leave with mandatory reason
+        public static final String DELETED_LEAVE_APPLICATION_STATUS = "DELETED";
+        public static final Short DELETED_LEAVE_APPLICATION_STATUS_ID = 9;
     }
 
     public static final String NOTIFY_FOR_LEAVE_EXPIRY = "EXPIRY";

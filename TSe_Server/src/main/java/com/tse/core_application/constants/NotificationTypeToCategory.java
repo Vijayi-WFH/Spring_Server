@@ -48,6 +48,9 @@ public enum NotificationTypeToCategory {
     TEMPLATE_UPDATE("TEMPLATE_UPDATE", 16),
     STATUS_INQUIRY("STATUS_INQUIRY", 17),
     LEAVE_EXPIRED("LEAVE_EXPIRED", 11),
+    // Claude change: PT-14409 - Added notification types for consumed leave edit/delete by Org Admin
+    LEAVE_EDITED_BY_ADMIN("LEAVE_EDITED_BY_ADMIN", 11),
+    LEAVE_DELETED_BY_ADMIN("LEAVE_DELETED_BY_ADMIN", 11),
     COMMENT("COMMENT",18),
     NOTE("NOTE",19),
     EPIC_STARTED("EPIC_STARTED", 20),

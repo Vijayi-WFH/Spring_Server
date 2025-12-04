@@ -50,6 +50,10 @@ public class Constants {
 
         public static final Short CONSUMED_LEAVE_APPLICATION_STATUS_ID = 8;
 
+        // Claude change: PT-14409 - Added DELETED status for consumed leave deletion feature
+        // This status is used when Org Admin deletes a consumed leave with mandatory reason
+        public static final String DELETED_LEAVE_APPLICATION_STATUS = "DELETED";
+        public static final Short DELETED_LEAVE_APPLICATION_STATUS_ID = 9;
 
         public static final List<Short> APPROVER_LEAVE_APPLICATION_STATUS = List.of((short) 3,(short)4,(short)5);
         public static final Short TIME_OFF_LEAVE_TYPE_ID = 1;

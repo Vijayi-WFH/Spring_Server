@@ -1654,6 +1654,314 @@ public class LeaveService {
         }
         return leaveDayMap;
     }
+
+    // Claude change: PT-14409 - Autowire repository for consumed leave history
+    @Autowired
+    private LeaveApplicationHistoryRepository leaveApplicationHistoryRepository;
+
+    /**
+     * Claude change: PT-14409 - Edit a consumed leave application
+     * Only Org Admin or Backup Org Admin can edit consumed leaves
+     * Creates an audit history record with old and new values
+     * @param request EditConsumedLeaveRequest with new values and mandatory reason
+     * @param accountIds Account ID of the requesting user (from header)
+     * @return ResponseEntity with success message
+     */
+    public ResponseEntity<String> editConsumedLeave(EditConsumedLeaveRequest request, String accountIds) {
+        // Claude change: Validate Org Admin access
+        if (!isOrgAdminOrBackUpAdmin(null, null, Long.valueOf(accountIds))) {
+            throw new ValidationFailedException("You're not authorized to edit consumed leaves");
+        }
+
+        // Claude change: Get the leave application
+        LeaveApplication leaveApplication = leaveApplicationRepository.findByLeaveApplicationId(request.getLeaveApplicationId());
+        if (leaveApplication == null) {
+            throw new ValidationFailedException("Leave application not found");
+        }
+
+        // Claude change: Validate the leave is in CONSUMED status
+        if (!Objects.equals(leaveApplication.getLeaveApplicationStatusId(), Constants.Leave.CONSUMED_LEAVE_APPLICATION_STATUS_ID)) {
+            throw new ValidationFailedException("Only consumed leaves can be edited");
+        }
+
+        // Claude change: Validate the leave is not already deleted
+        if (Boolean.TRUE.equals(leaveApplication.getIsDeleted())) {
+            throw new ValidationFailedException("Cannot edit a deleted leave");
+        }
+
+        // Claude change: Validate mandatory reason
+        if (request.getReason() == null || request.getReason().trim().isEmpty()) {
+            throw new ValidationFailedException("Reason for edit is mandatory");
+        }
+
+        // Claude change: Create history record with old values
+        LeaveApplicationHistory history = LeaveApplicationHistory.builder()
+                .leaveApplicationId(leaveApplication.getLeaveApplicationId())
+                .updatedByAccountId(Long.valueOf(accountIds))
+                .actionType("EDIT")
+                .reason(request.getReason())
+                // Old values
+                .oldFromDate(leaveApplication.getFromDate())
+                .oldFromTime(leaveApplication.getFromTime())
+                .oldToDate(leaveApplication.getToDate())
+                .oldToTime(leaveApplication.getToTime())
+                .oldLeaveTypeId(leaveApplication.getLeaveTypeId())
+                .oldLeaveDays(leaveApplication.getNumberOfLeaveDays())
+                .oldIsHalfDay(leaveApplication.getIsLeaveForHalfDay())
+                .oldHalfDayLeaveType(leaveApplication.getHalfDayLeaveType())
+                .oldLeaveReason(leaveApplication.getLeaveReason())
+                .oldAddress(leaveApplication.getAddress())
+                .build();
+
+        // Claude change: Apply updates if provided
+        if (request.getFromDate() != null) {
+            leaveApplication.setFromDate(request.getFromDate());
+        }
+        if (request.getFromTime() != null) {
+            leaveApplication.setFromTime(request.getFromTime());
+        }
+        if (request.getToDate() != null) {
+            leaveApplication.setToDate(request.getToDate());
+        }
+        if (request.getToTime() != null) {
+            leaveApplication.setToTime(request.getToTime());
+        }
+        if (request.getLeaveTypeId() != null) {
+            leaveApplication.setLeaveTypeId(request.getLeaveTypeId());
+        }
+        if (request.getLeaveReason() != null) {
+            leaveApplication.setLeaveReason(request.getLeaveReason());
+        }
+        if (request.getAddress() != null) {
+            leaveApplication.setAddress(request.getAddress());
+        }
+        if (request.getIsHalfDay() != null) {
+            leaveApplication.setIsLeaveForHalfDay(request.getIsHalfDay());
+        }
+        if (request.getHalfDayLeaveType() != null) {
+            leaveApplication.setHalfDayLeaveType(request.getHalfDayLeaveType());
+        }
+
+        // Claude change: Save the updated leave application
+        leaveApplicationRepository.save(leaveApplication);
+
+        // Claude change: Set new values in history
+        history.setNewFromDate(leaveApplication.getFromDate());
+        history.setNewFromTime(leaveApplication.getFromTime());
+        history.setNewToDate(leaveApplication.getToDate());
+        history.setNewToTime(leaveApplication.getToTime());
+        history.setNewLeaveTypeId(leaveApplication.getLeaveTypeId());
+        history.setNewLeaveDays(leaveApplication.getNumberOfLeaveDays());
+        history.setNewIsHalfDay(leaveApplication.getIsLeaveForHalfDay());
+        history.setNewHalfDayLeaveType(leaveApplication.getHalfDayLeaveType());
+        history.setNewLeaveReason(leaveApplication.getLeaveReason());
+        history.setNewAddress(leaveApplication.getAddress());
+
+        // Claude change: Save the history record
+        leaveApplicationHistoryRepository.save(history);
+
+        // Claude change: TODO - Send notification to the employee (will be added in notification step)
+
+        logger.info("Consumed leave edited successfully. LeaveId: {}, EditedBy: {}",
+                request.getLeaveApplicationId(), accountIds);
+
+        return ResponseEntity.ok("Consumed leave edited successfully");
+    }
+
+    /**
+     * Claude change: PT-14409 - Delete (soft delete) a consumed leave application
+     * Only Org Admin or Backup Org Admin can delete consumed leaves
+     * Creates an audit history record with old values
+     * @param request DeleteConsumedLeaveRequest with leave ID and mandatory reason
+     * @param accountIds Account ID of the requesting user (from header)
+     * @return ResponseEntity with success message
+     */
+    public ResponseEntity<String> deleteConsumedLeave(DeleteConsumedLeaveRequest request, String accountIds) {
+        // Claude change: Validate Org Admin access
+        if (!isOrgAdminOrBackUpAdmin(null, null, Long.valueOf(accountIds))) {
+            throw new ValidationFailedException("You're not authorized to delete consumed leaves");
+        }
+
+        // Claude change: Get the leave application
+        LeaveApplication leaveApplication = leaveApplicationRepository.findByLeaveApplicationId(request.getLeaveApplicationId());
+        if (leaveApplication == null) {
+            throw new ValidationFailedException("Leave application not found");
+        }
+
+        // Claude change: Validate the leave is in CONSUMED status
+        if (!Objects.equals(leaveApplication.getLeaveApplicationStatusId(), Constants.Leave.CONSUMED_LEAVE_APPLICATION_STATUS_ID)) {
+            throw new ValidationFailedException("Only consumed leaves can be deleted");
+        }
+
+        // Claude change: Validate the leave is not already deleted
+        if (Boolean.TRUE.equals(leaveApplication.getIsDeleted())) {
+            throw new ValidationFailedException("Leave is already deleted");
+        }
+
+        // Claude change: Validate mandatory reason
+        if (request.getReason() == null || request.getReason().trim().isEmpty()) {
+            throw new ValidationFailedException("Reason for deletion is mandatory");
+        }
+
+        // Claude change: Create history record with old values (new values will be null for DELETE)
+        LeaveApplicationHistory history = LeaveApplicationHistory.builder()
+                .leaveApplicationId(leaveApplication.getLeaveApplicationId())
+                .updatedByAccountId(Long.valueOf(accountIds))
+                .actionType("DELETE")
+                .reason(request.getReason())
+                // Old values
+                .oldFromDate(leaveApplication.getFromDate())
+                .oldFromTime(leaveApplication.getFromTime())
+                .oldToDate(leaveApplication.getToDate())
+                .oldToTime(leaveApplication.getToTime())
+                .oldLeaveTypeId(leaveApplication.getLeaveTypeId())
+                .oldLeaveDays(leaveApplication.getNumberOfLeaveDays())
+                .oldIsHalfDay(leaveApplication.getIsLeaveForHalfDay())
+                .oldHalfDayLeaveType(leaveApplication.getHalfDayLeaveType())
+                .oldLeaveReason(leaveApplication.getLeaveReason())
+                .oldAddress(leaveApplication.getAddress())
+                // New values are null for DELETE
+                .build();
+
+        // Claude change: Soft delete - set isDeleted flag and change status to DELETED
+        leaveApplication.setIsDeleted(true);
+        leaveApplication.setLeaveApplicationStatusId(Constants.Leave.DELETED_LEAVE_APPLICATION_STATUS_ID);
+
+        // Claude change: Save the updated leave application
+        leaveApplicationRepository.save(leaveApplication);
+
+        // Claude change: Save the history record
+        leaveApplicationHistoryRepository.save(history);
+
+        // Claude change: TODO - Send notification to the employee (will be added in notification step)
+
+        logger.info("Consumed leave deleted successfully. LeaveId: {}, DeletedBy: {}",
+                request.getLeaveApplicationId(), accountIds);
+
+        return ResponseEntity.ok("Consumed leave deleted successfully");
+    }
+
+    /**
+     * Claude change: PT-14409 - Get leave application history for audit report
+     * Only Org Admin or Backup Org Admin can view the history
+     * @param request LeaveApplicationHistoryRequest with optional filters
+     * @param accountIds Account ID of the requesting user (from header)
+     * @return ResponseEntity with list of history records
+     */
+    public ResponseEntity<List<LeaveApplicationHistoryResponse>> getLeaveApplicationHistory(
+            LeaveApplicationHistoryRequest request, String accountIds) {
+        // Claude change: Validate Org Admin access
+        if (!isOrgAdminOrBackUpAdmin(request.getOrgId(), null, Long.valueOf(accountIds))) {
+            throw new ValidationFailedException("You're not authorized to view leave history");
+        }
+
+        List<LeaveApplicationHistory> historyList;
+
+        // Claude change: Filter by specific leave application if provided
+        if (request.getLeaveApplicationId() != null) {
+            historyList = leaveApplicationHistoryRepository
+                    .findByLeaveApplicationIdOrderByUpdatedOnDesc(request.getLeaveApplicationId());
+        }
+        // Claude change: Filter by employee if provided
+        else if (request.getEmployeeAccountId() != null) {
+            historyList = leaveApplicationHistoryRepository
+                    .findByEmployeeAccountId(request.getEmployeeAccountId());
+        }
+        // Claude change: Get all history records
+        else {
+            historyList = leaveApplicationHistoryRepository.findAll();
+            historyList.sort((h1, h2) -> h2.getUpdatedOn().compareTo(h1.getUpdatedOn()));
+        }
+
+        // Claude change: Convert to response DTOs
+        List<LeaveApplicationHistoryResponse> responseList = historyList.stream()
+                .map(this::convertToHistoryResponse)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(responseList);
+    }
+
+    /**
+     * Claude change: PT-14409 - Helper method to convert history entity to response DTO
+     */
+    private LeaveApplicationHistoryResponse convertToHistoryResponse(LeaveApplicationHistory history) {
+        LeaveApplicationHistoryResponse response = new LeaveApplicationHistoryResponse();
+        response.setHistoryId(history.getHistoryId());
+        response.setLeaveApplicationId(history.getLeaveApplicationId());
+        response.setActionType(history.getActionType());
+        response.setReason(history.getReason());
+        response.setUpdatedByAccountId(history.getUpdatedByAccountId());
+        response.setUpdatedOn(history.getUpdatedOn());
+
+        // Claude change: Get updater name
+        UserAccount updater = userAccountRepository.findByAccountIdAndIsActive(history.getUpdatedByAccountId(), true);
+        if (updater != null) {
+            response.setUpdatedByName(updater.getFirstName() + " " + updater.getLastName());
+        }
+
+        // Claude change: Get employee details from leave application
+        LeaveApplication leaveApp = leaveApplicationRepository.findByLeaveApplicationId(history.getLeaveApplicationId());
+        if (leaveApp != null) {
+            response.setEmployeeAccountId(leaveApp.getAccountId());
+            UserAccount employee = userAccountRepository.findByAccountIdAndIsActive(leaveApp.getAccountId(), true);
+            if (employee != null) {
+                response.setEmployeeName(employee.getFirstName() + " " + employee.getLastName());
+            }
+        }
+
+        // Claude change: Build old version snapshot
+        LeaveApplicationHistoryResponse.LeaveVersionSnapshot oldVersion =
+                LeaveApplicationHistoryResponse.LeaveVersionSnapshot.builder()
+                        .fromDate(history.getOldFromDate())
+                        .fromTime(history.getOldFromTime())
+                        .toDate(history.getOldToDate())
+                        .toTime(history.getOldToTime())
+                        .leaveTypeId(history.getOldLeaveTypeId())
+                        .leaveTypeName(getLeaveTypeName(history.getOldLeaveTypeId()))
+                        .leaveDays(history.getOldLeaveDays())
+                        .isHalfDay(history.getOldIsHalfDay())
+                        .halfDayLeaveType(history.getOldHalfDayLeaveType())
+                        .leaveReason(history.getOldLeaveReason())
+                        .address(history.getOldAddress())
+                        .build();
+        response.setOldVersion(oldVersion);
+
+        // Claude change: Build new version snapshot (null for DELETE actions)
+        if (!"DELETE".equals(history.getActionType())) {
+            LeaveApplicationHistoryResponse.LeaveVersionSnapshot newVersion =
+                    LeaveApplicationHistoryResponse.LeaveVersionSnapshot.builder()
+                            .fromDate(history.getNewFromDate())
+                            .fromTime(history.getNewFromTime())
+                            .toDate(history.getNewToDate())
+                            .toTime(history.getNewToTime())
+                            .leaveTypeId(history.getNewLeaveTypeId())
+                            .leaveTypeName(getLeaveTypeName(history.getNewLeaveTypeId()))
+                            .leaveDays(history.getNewLeaveDays())
+                            .isHalfDay(history.getNewIsHalfDay())
+                            .halfDayLeaveType(history.getNewHalfDayLeaveType())
+                            .leaveReason(history.getNewLeaveReason())
+                            .address(history.getNewAddress())
+                            .build();
+            response.setNewVersion(newVersion);
+        }
+
+        return response;
+    }
+
+    /**
+     * Claude change: PT-14409 - Helper method to get leave type name from ID
+     */
+    private String getLeaveTypeName(Short leaveTypeId) {
+        if (leaveTypeId == null) {
+            return null;
+        }
+        if (leaveTypeId.equals(Constants.Leave.TIME_OFF_LEAVE_TYPE_ID)) {
+            return "Time Off";
+        } else if (leaveTypeId.equals(Constants.Leave.SICK_LEAVE_TYPE_ID)) {
+            return "Sick Leave";
+        }
+        return "Unknown";
+    }
 }
 
 
