@@ -34,4 +34,9 @@ public class EntityPreferenceResponse {
     private Boolean isGeoFencingAllowed;
     private Boolean isGeoFencingActive;
     private Boolean meetAutoLogEffortEnabled;
+    private Integer forwardDated;
+    private Integer backwardDated;
+    private Integer payRollGenerationDay;
+    private Boolean isPayRollAtLastDayOfMonth;
+    private Boolean isPayRollAtLastSecondDayOfMonth;
 }

@@ -109,6 +109,8 @@ public class LeaveApplication {
 
     private Boolean isSprintCapacityAdjustment;
 
+    private LocalDate expiryLeaveDate;
+
     // Claude change: PT-14409 - Added isDeleted flag for soft delete of consumed leaves
     // When Org Admin deletes a consumed leave, this flag is set to true along with status change to DELETED
     @Column(name = "is_deleted")

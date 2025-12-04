@@ -716,4 +716,25 @@ public class SchedulingController {
             return CustomResponseHandler.generateCustomResponse(HttpStatus.INTERNAL_SERVER_ERROR, Constants.FormattedResponse.SERVER_ERROR, "ERROR!");
         }
     }
+    @PostMapping("/notification/expireLeaveApplicationsNotifications")
+    public ResponseEntity<Object> notificationScheduler(){
+        long startTime = System.currentTimeMillis();
+        ThreadContext.put("accountId", String.valueOf(0));
+        ThreadContext.put("userId", String.valueOf(0));
+        logger.info("Entered notification scheduler method. ");
+        try {
+            schedulingService.expiredLeaveApplicationNotification();
+            long estimatedTime = System.currentTimeMillis() - startTime;
+            ThreadContext.put("systemResponseTime", String.valueOf(estimatedTime));
+            logger.info("Exited the Notification Scheduler method, and it has completed successfully.");
+            ThreadContext.clearMap();
+            return CustomResponseHandler.generateCustomResponse(HttpStatus.OK, com.tse.core_application.constants.Constants.FormattedResponse.SUCCESS, "Notification sent successfully");
+
+        } catch (Exception e) {
+            String allStackTraces = StackTraceHandler.getAllStackTraces(e);
+            logger.error("Notification could not be send. Caught Exception: " + e, new Throwable(allStackTraces));
+            ThreadContext.clearMap();
+            return CustomResponseHandler.generateCustomResponse(HttpStatus.INTERNAL_SERVER_ERROR, Constants.FormattedResponse.SERVER_ERROR, "ERROR!");
+        }
+    }
 }

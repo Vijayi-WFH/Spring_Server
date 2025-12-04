@@ -1575,5 +1575,13 @@ public class Constants {
     public static final List<Integer> adminRolesList = List.of(AdminRoles.ORG_ADMIN, AdminRoles.BACKUP_ORG_ADMIN, AdminRoles.SUPER_ADMIN);
 
     public static final Integer Alert_Deletion_Days = 30;
+
+    public static class ExpiryDays {
+        public static final int FORWARD_DAYS = 0;
+        public static final int BACKWARD_DAYS = 0;
+    }
+    public static class Payroll {
+        public static final int DEFAULT_PAYROLL_DAY = 1;
+    }
 }
 

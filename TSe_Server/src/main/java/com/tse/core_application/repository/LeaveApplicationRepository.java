@@ -22,6 +22,14 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
     @Query("SELECT count(l) FROM LeaveApplication l WHERE l.accountId in :accountIdsList")
     Integer findLeavesCountByAccountIdIn(List<Long> accountIdsList);
 
+    @Query("SELECT la FROM LeaveApplication la " +
+            "WHERE la.leaveApplicationStatusId = :leaveApplicationStatusId " +
+            "AND la.expiryLeaveDate = :today")
+    List<LeaveApplication> findByExpiryLeaveDateAndStatus(
+            @Param("today") LocalDate today,
+            @Param("leaveApplicationStatusId") Short leaveApplicationStatusId
+    );
+
     @Query("SELECT la FROM LeaveApplication la WHERE la.leaveApplicationStatusId = :leaveApplicationStatusId AND la.fromDate < :date")
     List<LeaveApplication> findLeavesToSetConsumed(LocalDate date, Short leaveApplicationStatusId);
 

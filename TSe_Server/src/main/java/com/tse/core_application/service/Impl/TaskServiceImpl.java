@@ -7731,6 +7731,7 @@ public class TaskServiceImpl {
         normalizeMentorAndObserver(task);
         normalizeStarringField (task, taskDb);
         validateEstimateForParentTask(task, taskDb);
+        validateRcaFieldsNotEditableForCompletedBug(task, taskDb);
         validateAndNormalizeRca (task);
         validateOtherTaskProperties(task, taskDb);
     }
@@ -9287,6 +9288,64 @@ public class TaskServiceImpl {
         if (task.getRcaReason() != null) {
             task.setRcaReason(task.getRcaReason().trim());
         }
+    }
+
+    /**
+     * Validates that RCA fields are not modified once a bug/parent bug is marked as completed.
+     * PT-14170: RCA fields should not be editable after bug completion.
+     *
+     * @param task The task being updated (with new values)
+     * @param taskDb The original task from database
+     * @throws ValidationFailedException if RCA fields are being modified on a completed bug
+     */
+    public void validateRcaFieldsNotEditableForCompletedBug(Task task, Task taskDb) {
+        // Only validate for BUG_TASK or PARENT_TASK with isBug=true
+        boolean isBugTask = Objects.equals(taskDb.getTaskTypeId(), Constants.TaskTypes.BUG_TASK) ||
+                (taskDb.getIsBug() != null && taskDb.getIsBug() && Objects.equals(taskDb.getTaskTypeId(), Constants.TaskTypes.PARENT_TASK));
+
+        if (!isBugTask) {
+            return;
+        }
+
+        // Check if the original task (taskDb) is in COMPLETED status
+        boolean isCompleted = taskDb.getFkWorkflowTaskStatus() != null &&
+                Constants.WorkFlowStatusIds.COMPLETED.contains(taskDb.getFkWorkflowTaskStatus().getWorkflowTaskStatusId());
+
+        if (!isCompleted) {
+            return;
+        }
+
+        // If bug is completed, validate that no RCA field is being modified
+        // Note: Empty list/null and empty string/null are treated as equivalent
+        boolean rcaIdChanged = !Objects.equals(task.getRcaId(), taskDb.getRcaId());
+        boolean isRcaDoneChanged = !Objects.equals(task.getIsRcaDone(), taskDb.getIsRcaDone());
+        boolean rcaReasonChanged = !isStringEquivalent(task.getRcaReason(), taskDb.getRcaReason());
+        boolean rcaIntroducedByChanged = !isListEquivalent(task.getRcaIntroducedBy(), taskDb.getRcaIntroducedBy());
+
+        if (rcaIdChanged || isRcaDoneChanged || rcaReasonChanged || rcaIntroducedByChanged) {
+            throw new ValidationFailedException("RCA fields cannot be modified once the bug is marked as completed");
+        }
+    }
+
+    /**
+     * Compares two strings treating null and empty string as equivalent.
+     */
+    private boolean isStringEquivalent(String s1, String s2) {
+        String normalized1 = (s1 == null || s1.trim().isEmpty()) ? null : s1.trim();
+        String normalized2 = (s2 == null || s2.trim().isEmpty()) ? null : s2.trim();
+        return Objects.equals(normalized1, normalized2);
+    }
+
+    /**
+     * Compares two lists treating null and empty list as equivalent.
+     */
+    private boolean isListEquivalent(List<?> list1, List<?> list2) {
+        boolean isEmpty1 = (list1 == null || list1.isEmpty());
+        boolean isEmpty2 = (list2 == null || list2.isEmpty());
+        if (isEmpty1 && isEmpty2) {
+            return true;
+        }
+        return Objects.equals(list1, list2);
     }
 
     public List<Long> findValidAccountIdList (List<Long> accountIdList) {

@@ -51,4 +51,5 @@ public class LeaveApplicationResponse {
 
     private Integer halfDayLeaveType;
     private LocalDate applicationDate;
+    private LocalDate expiryLeaveDate;
 }
