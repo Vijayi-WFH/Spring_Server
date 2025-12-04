@@ -41,10 +41,6 @@ public class MeetingLinkClassifier {
     private static final Pattern WEBEX_PATTERN =
             Pattern.compile("^https?://([\\w-]+\\.)?webex\\.com(/|$)", Pattern.CASE_INSENSITIVE);
 
-    // Custom Jitsi-style path (domain varies, path fixed)
-    private static final Pattern JITSI_PATH_PATTERN =
-            Pattern.compile("(^|/)vijayi-meet(/|$)", Pattern.CASE_INSENSITIVE);
-
     private MeetingLinkClassifier() {
         // Private constructor to prevent instantiation
     }
@@ -52,22 +48,34 @@ public class MeetingLinkClassifier {
     /**
      * Classifies a meeting URL and returns information about the platform.
      *
-     * @param rawUrl         The meeting URL to classify
+     * If isExternalLink is null or false, it's treated as an internal Jitsi room name.
+     * The value is returned as-is (trimmed) for frontend to handle.
+     *
+     * If isExternalLink is true, it's treated as an external URL.
+     * The URL is normalized (https:// added if missing) and platform is detected.
+     *
+     * @param rawValue       The meeting link or room name
      * @param isExternalLink Whether the link is marked as external by the user
      * @return MeetingLinkInfo containing url, platform, and label
      */
-    public static MeetingLinkInfo classify(String rawUrl, Boolean isExternalLink) {
-        if (rawUrl == null || rawUrl.isBlank()) {
-            return new MeetingLinkInfo(null, PLATFORM_OTHER, LABEL_OTHER);
+    public static MeetingLinkInfo classify(String rawValue, Boolean isExternalLink) {
+        if (rawValue == null || rawValue.isBlank()) {
+            return new MeetingLinkInfo(null, null, null);
         }
 
-        String url = normalizeUrl(rawUrl);
+        String trimmedValue = rawValue.trim();
+
+        // If isExternalLink is null or false, treat as internal Jitsi room name
+        if (isExternalLink == null || !isExternalLink) {
+            // Internal link - just return the trimmed room name
+            // Frontend will handle how to open it in Jitsi
+            return new MeetingLinkInfo(trimmedValue, PLATFORM_CUSTOM_JITSI, trimmedValue);
+        }
+
+        // External link - normalize URL and detect platform
+        String url = normalizeExternalUrl(trimmedValue);
 
         try {
-            URI uri = URI.create(url);
-            String path = safe(uri.getPath());
-            String query = safe(uri.getQuery());
-
             // Check for Google Meet
             if (GOOGLE_MEET_PATTERN.matcher(url).find()) {
                 return new MeetingLinkInfo(url, PLATFORM_GOOGLE_MEET, LABEL_GOOGLE_MEET);
@@ -88,66 +96,26 @@ public class MeetingLinkClassifier {
                 return new MeetingLinkInfo(url, PLATFORM_WEBEX, LABEL_WEBEX);
             }
 
-            // Check for Custom Jitsi style: path contains /vijayi-meet and query has meetingName=<name>
-            if (JITSI_PATH_PATTERN.matcher(path).find()) {
-                String meetingName = extractQueryParam(query, "meetingName");
-                if (meetingName != null && !meetingName.isBlank()) {
-                    return new MeetingLinkInfo(url, PLATFORM_CUSTOM_JITSI, meetingName);
-                }
-                // If no meetingName param, still classify as Custom Jitsi but with generic label
-                return new MeetingLinkInfo(url, PLATFORM_CUSTOM_JITSI, "Jitsi Meet");
-            }
-
-            // Default: Other platform
+            // Default: Other external platform
             return new MeetingLinkInfo(url, PLATFORM_OTHER, LABEL_OTHER);
 
         } catch (Exception e) {
-            // If URL parsing fails, return the raw URL with OTHER platform
-            return new MeetingLinkInfo(rawUrl, PLATFORM_OTHER, LABEL_OTHER);
+            // If URL parsing fails, return the trimmed value with OTHER platform
+            return new MeetingLinkInfo(trimmedValue, PLATFORM_OTHER, LABEL_OTHER);
         }
     }
 
     /**
-     * Extracts a query parameter value from a query string.
-     *
-     * @param query The query string (without leading ?)
-     * @param key   The parameter key to extract
-     * @return The decoded parameter value, or null if not found
-     */
-    private static String extractQueryParam(String query, String key) {
-        if (query == null) {
-            return null;
-        }
-        for (String pair : query.split("&")) {
-            int idx = pair.indexOf('=');
-            String k = idx > -1 ? pair.substring(0, idx) : pair;
-            if (k.equalsIgnoreCase(key)) {
-                String v = idx > -1 ? pair.substring(idx + 1) : "";
-                return URLDecoder.decode(v, StandardCharsets.UTF_8);
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Normalizes a URL by adding https:// scheme if missing.
+     * Normalizes an external URL by adding https:// scheme if missing.
      *
      * @param url The URL to normalize
      * @return The normalized URL with scheme
      */
-    private static String normalizeUrl(String url) {
-        String trimmed = url.trim();
-        // Add scheme if missing
-        if (!trimmed.matches("^[a-zA-Z][a-zA-Z0-9+.-]*://.*$")) {
-            return "https://" + trimmed;
+    private static String normalizeExternalUrl(String url) {
+        // Add scheme if missing for external URLs
+        if (!url.matches("^[a-zA-Z][a-zA-Z0-9+.-]*://.*$")) {
+            return "https://" + url;
         }
-        return trimmed;
-    }
-
-    /**
-     * Returns the string or empty string if null.
-     */
-    private static String safe(String s) {
-        return s == null ? "" : s;
+        return url;
     }
 }
