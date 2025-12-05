@@ -63,4 +63,6 @@ public class EntityPreferenceRequest {
     private Boolean isPayRollAtLastDayOfMonth;
 
     private Boolean isPayRollAtLastSecondDayOfMonth;
+
+    private Integer distanceUnitId = 1;  // Default: 1 (KM) - see DistanceUnitEnum
 }

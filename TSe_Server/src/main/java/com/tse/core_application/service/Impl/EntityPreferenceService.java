@@ -2,6 +2,7 @@ package com.tse.core_application.service.Impl;
 
 import com.fasterxml.jackson.databind.util.BeanUtil;
 import com.google.firebase.database.utilities.Pair;
+import com.tse.core_application.constants.DistanceUnitEnum;
 import com.tse.core_application.constants.RoleEnum;
 import com.tse.core_application.custom.model.LeaveTypeAlias;
 import com.tse.core_application.dto.*;
@@ -245,6 +246,13 @@ public class EntityPreferenceService {
             throw new IllegalArgumentException("Invalid role ID(s) found in Starred Work Item Role ID list: " + invalidIds);
         }
         request.setStarringWorkItemRoleIdList(starringWorkItemRoleIdList);
+
+        // Validate and set distance unit (1 = KM, 2 = MILES)
+        if (request.getDistanceUnitId() == null) {
+            request.setDistanceUnitId(DistanceUnitEnum.KM.getId());
+        } else if (request.getDistanceUnitId() != DistanceUnitEnum.KM.getId() && request.getDistanceUnitId() != DistanceUnitEnum.MILES.getId()) {
+            throw new IllegalArgumentException("Invalid distance unit ID. Valid values are: 1 (KM) or 2 (MILES)");
+        }
     }
 
     /**
@@ -830,6 +838,21 @@ public class EntityPreferenceService {
         return Constants.BREAK_TIME_IN_DAY;
     }
     // ZZZZ Changes end
+
+    /**
+     * Get the distance unit preference for an organization.
+     * Returns KM as default if not set.
+     *
+     * @param orgId the organization ID
+     * @return the DistanceUnitEnum (KM or MILES), defaults to KM
+     */
+    public DistanceUnitEnum getDistanceUnit(Long orgId) {
+        EntityPreference orgPreference = fetchEntityPreference(Constants.EntityTypes.ORG, orgId);
+        if (orgPreference != null && orgPreference.getDistanceUnitId() != null) {
+            return DistanceUnitEnum.fromIdOrDefault(orgPreference.getDistanceUnitId());
+        }
+        return DistanceUnitEnum.KM;
+    }
 
     public TeamPreferenceResponse getTeamPreference(Long teamId) {
         if (teamId != null) {
