@@ -169,4 +169,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     @Modifying
     @Query("DELETE FROM Meeting m WHERE m.orgId = :orgId")
     void deleteAllByOrgId(Long orgId);
+
+    @Query("SELECT m.meetingId FROM Meeting m WHERE m.orgId = :orgId")
+    List<Long> findAllMeetingIdsByOrgId(Long orgId);
 }

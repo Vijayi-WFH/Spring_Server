@@ -175,4 +175,9 @@ public interface DependencyRepository extends JpaRepository<Dependency, Long> {
 
     @Query(value = "SELECT d FROM Dependency d where d.isRemoved = :isRemoved AND d.predecessorTaskId IN (:taskIds) OR d.successorTaskId IN (:taskIds)")
     List<Dependency> findAllDependenciesForTasks(List<Long> taskIds, Boolean isRemoved);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Dependency d WHERE d.predecessorTaskId IN :taskIds OR d.successorTaskId IN :taskIds")
+    void deleteByTaskIdIn(List<Long> taskIds);
 }

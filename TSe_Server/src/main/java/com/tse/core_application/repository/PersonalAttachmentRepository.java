@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import com.tse.core_application.model.personal_task.PersonalAttachment;
 
 import java.util.List;
@@ -28,4 +29,9 @@ public interface PersonalAttachmentRepository extends JpaRepository<PersonalAtta
     @Modifying
     @Query("update PersonalAttachment t set t.fileStatus = :fileStatus, t.deletedDateTime = CURRENT_TIMESTAMP where t.personalTaskId = :taskId AND t.fileName = :fileName AND t.accountId = :removerAccountId")
     void updatePersonalTaskAttachmentStatusByTaskIAndFileName(Long taskId, String fileName, Long removerAccountId, Character fileStatus);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM PersonalAttachment pa WHERE pa.personalTaskId IN :personalTaskIds")
+    void deleteByPersonalTaskIdIn(List<Long> personalTaskIds);
 }

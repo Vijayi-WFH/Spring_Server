@@ -3,8 +3,10 @@ package com.tse.core_application.repository;
 import com.tse.core_application.custom.model.TaskHistoryMappingKeyColumnsDesc;
 import com.tse.core_application.model.TaskHistoryColumnsMapping;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -19,4 +21,9 @@ public interface TaskHistoryColumnsMappingRepository extends JpaRepository<TaskH
     List<TaskHistoryColumnsMapping> findColumnNameByTaskHistoryColumnsMappingKeyInAndIsActive(List<Integer> taskHistoryColumnsMappingKey, Integer isActive);
 
     List<TaskHistoryColumnsMapping> findByTaskHistoryColumnsMappingKeyIn(List<Integer> taskHistoryColumnsMappingKey);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM TaskHistoryColumnsMapping thcm WHERE thcm.taskHistoryId IN :taskHistoryIds")
+    void deleteByTaskHistoryIdIn(List<Long> taskHistoryIds);
 }

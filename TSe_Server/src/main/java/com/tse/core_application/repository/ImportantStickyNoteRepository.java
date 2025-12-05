@@ -2,8 +2,10 @@ package com.tse.core_application.repository;
 
 import com.tse.core_application.model.ImportantStickyNote;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -16,5 +18,10 @@ public interface ImportantStickyNoteRepository extends JpaRepository<ImportantSt
 
     @Query("SELECT isn.noteId FROM ImportantStickyNote isn WHERE isn.userId in :userId")
     List<Long> findAllImportantNoteIdsByUserIn (List<Long> userId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM ImportantStickyNote isn WHERE isn.noteId IN :noteIds")
+    void deleteByNoteIdIn(List<Long> noteIds);
 
 }

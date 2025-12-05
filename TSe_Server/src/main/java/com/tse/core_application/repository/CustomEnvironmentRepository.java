@@ -3,8 +3,11 @@ package com.tse.core_application.repository;
 import com.tse.core_application.custom.model.EnvironmentIdDescDisplayAs;
 import com.tse.core_application.model.CustomEnvironment;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 
 import java.util.HashMap;
@@ -31,4 +34,9 @@ public interface CustomEnvironmentRepository extends JpaRepository<CustomEnviron
             Boolean isActive,
             Integer customEnvironmentId
     );
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM CustomEnvironment ce WHERE ce.orgId = :orgId")
+    void deleteByOrgId(Long orgId);
 }

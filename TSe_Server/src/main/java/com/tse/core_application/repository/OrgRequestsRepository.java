@@ -24,4 +24,9 @@ public interface OrgRequestsRepository extends JpaRepository<OrgRequests,Long> {
     int updateIsAcceptedByOrgRequestId(Boolean response, Long orgRequestId);
 
     OrgRequests findByOrgRequestId(Long orgRequestId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM OrgRequests or WHERE or.fromOrgId = :orgId")
+    void deleteByOrgId(Long orgId);
 }

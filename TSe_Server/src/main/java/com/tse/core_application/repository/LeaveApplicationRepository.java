@@ -72,4 +72,7 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
     @Transactional
     @Query("DELETE FROM LeaveApplication la WHERE la.accountId IN :accountIds")
     void deleteAllByAccountIdIn(List<Long> accountIds);
+
+    @Query("SELECT la.leaveApplicationId FROM LeaveApplication la WHERE la.accountId IN :accountIds")
+    List<Long> findAllLeaveApplicationIdsByAccountIds(List<Long> accountIds);
 }

@@ -119,4 +119,6 @@ public interface SprintRepository extends JpaRepository<Sprint, Long> {
     @Query("DELETE FROM Sprint s WHERE s.entityTypeId = 5 AND s.entityId IN :teamIds")
     void deleteAllByTeamIdIn(List<Long> teamIds);
 
+    @Query("SELECT s.sprintId FROM Sprint s WHERE s.entityTypeId = 5 AND s.entityId IN :teamIds")
+    List<Long> findAllSprintIdsByTeamIds(List<Long> teamIds);
 }

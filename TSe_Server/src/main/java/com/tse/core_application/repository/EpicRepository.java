@@ -38,4 +38,17 @@ public interface EpicRepository extends JpaRepository<Epic, Long> {
     @Transactional
     @Query(value = "DELETE FROM tse.epic e WHERE EXISTS (SELECT 1 FROM unnest(string_to_array(e.team_id_list, ',')) AS team_id WHERE team_id::bigint IN :teamIds)", nativeQuery = true)
     void deleteAllByTeamIdIn(List<Long> teamIds);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Epic e WHERE e.fkOrgId.orgId = :orgId")
+    void deleteByOrgId(Long orgId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Epic e WHERE e.fkProjectId.projectId IN :projectIds")
+    void deleteByProjectIdIn(List<Long> projectIds);
+
+    @Query(value = "SELECT DISTINCT e.epic_id FROM tse.epic e WHERE EXISTS (SELECT 1 FROM unnest(string_to_array(e.team_id_list, ',')) AS team_id WHERE team_id::bigint IN :teamIds)", nativeQuery = true)
+    List<Long> findAllEpicIdsByTeamIds(List<Long> teamIds);
 }

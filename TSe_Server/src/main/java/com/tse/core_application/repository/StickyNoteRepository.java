@@ -119,5 +119,8 @@ public interface StickyNoteRepository extends JpaRepository<StickyNote, Long> {
     @Modifying
     @Query("DELETE FROM StickyNote s WHERE s.createdByAccountId IN :accountIds")
     void deleteAllByAccountIdIn(List<Long> accountIds);
+
+    @Query("SELECT s.noteId FROM StickyNote s WHERE s.createdByAccountId IN :accountIds")
+    List<Long> findAllStickyNoteIdsByAccountIds(List<Long> accountIds);
 }
 

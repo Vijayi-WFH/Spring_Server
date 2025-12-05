@@ -2,8 +2,10 @@ package com.tse.core_application.repository;
 
 import com.tse.core_application.model.TaskTemplate;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -25,4 +27,9 @@ public interface TaskTemplateRepository extends JpaRepository<TaskTemplate, Long
 
     @Query("SELECT count(t) FROM TaskTemplate t WHERE ((t.fkProjectId.isDeleted IS NULL OR t.fkProjectId.isDeleted = false) AND (t.fkTeamId.isDeleted IS NULL OR t.fkTeamId.isDeleted = false)) AND t.fkOrgId.orgId = :orgId")
     Integer findTaskTemplateCountByOrgId(Long orgId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM TaskTemplate tt WHERE tt.fkAccountIdCreator.accountId IN :accountIds")
+    void deleteByAccountIdIn(List<Long> accountIds);
 }

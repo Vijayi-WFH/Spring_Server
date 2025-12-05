@@ -1,9 +1,11 @@
 package com.tse.core_application.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.tse.core_application.custom.model.RoleIdInUserRoleRepository;
 import com.tse.core_application.model.UserRole;
@@ -31,4 +33,9 @@ public interface UserRoleRepository extends JpaRepository<UserRole, Long>{
 
 	@Query("select ur.roleId from UserRole ur where ur.accountId=:accountId")
 	Integer findRoleIdByAccountId(Long accountId);
+
+	@Modifying
+	@Transactional
+	@Query("DELETE FROM UserRole ur WHERE ur.accountId IN :accountIds")
+	void deleteByAccountIdIn(List<Long> accountIds);
 }

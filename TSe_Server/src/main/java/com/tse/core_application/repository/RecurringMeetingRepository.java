@@ -3,8 +3,10 @@ package com.tse.core_application.repository;
 import com.tse.core_application.custom.model.RecurringMeetingNumber;
 import com.tse.core_application.model.RecurringMeeting;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,4 +24,12 @@ public interface RecurringMeetingRepository extends JpaRepository<RecurringMeeti
     List<RecurringMeeting> findByRecurringMeetingEndDateTimeGreaterThanEqualAndRecurringMeetingStartDateTimeLessThanEqual(LocalDateTime fromDate,LocalDateTime toDate);
 
     List<RecurringMeeting> findByTeamId(Long teamId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM RecurringMeeting rm WHERE rm.orgId = :orgId")
+    void deleteByOrgId(Long orgId);
+
+    @Query("SELECT rm.recurringMeetingId FROM RecurringMeeting rm WHERE rm.orgId = :orgId")
+    List<Long> findAllRecurringMeetingIdsByOrgId(Long orgId);
 }

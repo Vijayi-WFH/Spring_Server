@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,4 +28,9 @@ public interface UserCapacityMetricsRepository extends JpaRepository<UserCapacit
     @Modifying
     @Query("UPDATE UserCapacityMetrics u SET u.isRemoved = true where u.sprintId = :sprintId AND u.accountId = :accountId")
     void removeUserCapacity(Long sprintId, Long accountId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM UserCapacityMetrics ucm WHERE ucm.orgId = :orgId")
+    void deleteByOrgId(Long orgId);
 }

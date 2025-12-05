@@ -55,4 +55,9 @@ public interface EntityPreferenceRepository extends JpaRepository<EntityPreferen
     @Transactional
     @Query("DELETE FROM EntityPreference ep WHERE ep.entityTypeId = :entityTypeId AND ep.entityId = :entityId")
     void deleteByEntityTypeIdAndEntityId(Integer entityTypeId, Long entityId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM EntityPreference ep WHERE ep.entityTypeId = :entityTypeId AND ep.entityId IN :entityIds")
+    void deleteByEntityTypeIdAndEntityIdIn(Integer entityTypeId, List<Long> entityIds);
 }
