@@ -711,8 +711,8 @@ public class GeoFenceAttendanceDataService {
                     if (Boolean.TRUE.equals(event.getUnderRange())) {
                         punchEvent.setLocationLabel(fence.getName());
                     } else {
-                        // Fetch org's distance unit preference
-                        DistanceUnitEnum distanceUnit = getDistanceUnitForOrg(orgId);
+                        // Get distance unit from existing entity preference (avoid redundant DB call)
+                        DistanceUnitEnum distanceUnit = getDistanceUnitFromPreference(optionalEntityPreference);
                         String formattedDistance = DistanceConversionUtil.formatDistanceLabel(distance, distanceUnit, fence.getName());
                         punchEvent.setLocationLabel(formattedDistance);
                     }
@@ -1085,16 +1085,15 @@ public class GeoFenceAttendanceDataService {
     }
 
     /**
-     * Get the distance unit preference for an organization.
+     * Get the distance unit from entity preference.
      * Returns KM as default if not set.
      *
-     * @param orgId the organization ID
+     * @param optionalEntityPreference the entity preference (already fetched)
      * @return the DistanceUnitEnum (KM or MILES), defaults to KM
      */
-    private DistanceUnitEnum getDistanceUnitForOrg(Long orgId) {
-        Optional<EntityPreference> orgPreference = entityPreferenceRepository.findByEntityTypeIdAndEntityId(Constants.EntityTypes.ORG, orgId);
-        if (orgPreference.isPresent() && orgPreference.get().getDistanceUnitId() != null) {
-            return DistanceUnitEnum.fromIdOrDefault(orgPreference.get().getDistanceUnitId());
+    private DistanceUnitEnum getDistanceUnitFromPreference(Optional<EntityPreference> optionalEntityPreference) {
+        if (optionalEntityPreference.isPresent() && optionalEntityPreference.get().getDistanceUnitId() != null) {
+            return DistanceUnitEnum.fromIdOrDefault(optionalEntityPreference.get().getDistanceUnitId());
         }
         return DistanceUnitEnum.KM;
     }
