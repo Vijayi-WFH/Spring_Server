@@ -158,5 +158,5 @@ public class EntityPreference {
     private Boolean isPayRollAtLastSecondDayOfMonth;
 
     @Column(name = "distance_unit_id")
-    private Integer distanceUnitId;  // Default: 1 (KM) - see DistanceUnitEnum
+    private Integer distanceUnitId = 1;  // Default: 1 (KM) - see DistanceUnitEnum
 }

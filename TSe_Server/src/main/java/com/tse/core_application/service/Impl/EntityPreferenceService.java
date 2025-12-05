@@ -246,6 +246,13 @@ public class EntityPreferenceService {
             throw new IllegalArgumentException("Invalid role ID(s) found in Starred Work Item Role ID list: " + invalidIds);
         }
         request.setStarringWorkItemRoleIdList(starringWorkItemRoleIdList);
+
+        // Validate and set distance unit (1 = KM, 2 = MILES)
+        if (request.getDistanceUnitId() == null) {
+            request.setDistanceUnitId(DistanceUnitEnum.KM.getId());
+        } else if (request.getDistanceUnitId() != DistanceUnitEnum.KM.getId() && request.getDistanceUnitId() != DistanceUnitEnum.MILES.getId()) {
+            throw new IllegalArgumentException("Invalid distance unit ID. Valid values are: 1 (KM) or 2 (MILES)");
+        }
     }
 
     /**
