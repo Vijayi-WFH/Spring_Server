@@ -295,4 +295,28 @@ public interface UserAccountRepository extends JpaRepository<UserAccount,Long> {
 
     @Query("Select ua.accountId from UserAccount ua where ua.isActive = true and ua.isRegisteredInAiService is Null")
     List<Long> findAllAccountIdByIsRegisteredInAiService(Boolean value);
+
+    @Query("SELECT ua.accountId FROM UserAccount ua WHERE ua.orgId = :orgId")
+    List<Long> findAllAccountIdsByOrgId(@Param("orgId") Long orgId);
+
+    @Query("SELECT ua.accountId FROM UserAccount ua WHERE ua.orgId = :orgId AND ua.isActive = true")
+    List<Long> findActiveAccountIdsByOrgId(@Param("orgId") Long orgId);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE UserAccount ua SET ua.isActive = false, ua.isInactivatedOnOrgDeletion = true WHERE ua.orgId = :orgId AND ua.isActive = true")
+    void deactivateAllActiveAccountsByOrgIdForDeletion(@Param("orgId") Long orgId);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE UserAccount ua SET ua.isActive = true, ua.isInactivatedOnOrgDeletion = false WHERE ua.orgId = :orgId AND ua.isInactivatedOnOrgDeletion = true")
+    void reactivateAccountsDeactivatedForOrgDeletion(@Param("orgId") Long orgId);
+
+    @Query("SELECT ua.accountId FROM UserAccount ua WHERE ua.orgId = :orgId AND ua.isInactivatedOnOrgDeletion = true")
+    List<Long> findAccountIdsInactivatedOnOrgDeletion(@Param("orgId") Long orgId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM UserAccount ua WHERE ua.orgId = :orgId")
+    void deleteAllByOrgId(@Param("orgId") Long orgId);
 }

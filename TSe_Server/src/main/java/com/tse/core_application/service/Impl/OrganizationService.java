@@ -119,6 +119,9 @@ public class OrganizationService implements IOrganizationService {
     @Autowired
     UserFeatureAccessService userFeatureAccessService;
 
+    @Autowired
+    DeletedOrganizationStatsRepository deletedOrganizationStatsRepository;
+
 
     @Override
     public Organization addOrganization(Organization organization, ExceptionalRegistration exceptionalRegistration, String userEmail, User user) {
@@ -446,13 +449,29 @@ public class OrganizationService implements IOrganizationService {
         }
     }
 
-    // checks whether the organization already exists by the org name
+    // checks whether the organization already exists by the org name (including deleted organizations)
     public Boolean doesOrganizationExist(String orgName) {
         if (getOrganizationByOrganizationName(orgName) != null && orgName.equalsIgnoreCase(Constants.PERSONAL_ORG)) {
             return false;
         }
-        return getOrganizationByOrganizationName(orgName) != null;
+        // Check if organization exists in active organizations
+        if (getOrganizationByOrganizationName(orgName) != null) {
+            return true;
+        }
+        // Also check if organization name exists in deleted organizations
+        return isDeletedOrganizationNameExists(orgName);
+    }
 
+    // Checks if the organization name exists in deleted organizations table
+    private Boolean isDeletedOrganizationNameExists(String orgName) {
+        String orgToFind = orgName.trim().replaceAll("\\s+", " ");
+        List<String> deletedOrgNames = deletedOrganizationStatsRepository.findAllDeletedOrganizationNames();
+        for (String deletedOrgName : deletedOrgNames) {
+            if (deletedOrgName != null && orgToFind.equalsIgnoreCase(deletedOrgName.trim().replaceAll("\\s+", " "))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     //this method returns list of BU for an organization

@@ -5,6 +5,9 @@ import com.tse.core_application.constants.Constants;
 import com.tse.core_application.custom.model.BuIdAndBuName;
 import com.tse.core_application.custom.model.OrgIdOrgName;
 import com.tse.core_application.dto.*;
+import com.tse.core_application.dto.org_deletion.OrgDeletionResponse;
+import com.tse.core_application.dto.org_deletion.RequestOrgDeletionRequest;
+import com.tse.core_application.dto.org_deletion.ReverseOrgDeletionRequest;
 import com.tse.core_application.dto.org_response.OrgStructureResponse;
 import com.tse.core_application.exception.*;
 import com.tse.core_application.handlers.CustomResponseHandler;
@@ -79,6 +82,9 @@ public class OrganizationController {
 
     @Autowired
     private SuperAdminService superAdminService;
+
+    @Autowired
+    private OrganizationDeletionService organizationDeletionService;
 
     //endpoint to get user's orgId, orgName by user's token
     @GetMapping(path = "/userAllOrganizationList")
@@ -872,6 +878,150 @@ public class OrganizationController {
             e.printStackTrace();
             String allStackTraces = StackTraceHandler.getAllStackTraces(e);
             logger.error(request.getRequestURI() + " API: " + "Something went wrong: Not able to deactivateAccountIdsInOrg for username = " + foundUser.getPrimaryEmail() + "Caught Exception: " + e, new Throwable(allStackTraces));
+            ThreadContext.clearMap();
+            if (e.getMessage() == null) throw new InternalServerErrorException("Internal Server Error!");
+            else throw e;
+        }
+    }
+
+    @DeleteMapping(path = "/requestDeletion")
+    public ResponseEntity<Object> requestOrganizationDeletion(@Valid @RequestBody RequestOrgDeletionRequest deletionRequest,
+                                                               @RequestHeader(name = "screenName") String screenName,
+                                                               @RequestHeader(name = "timeZone") String timeZone,
+                                                               @RequestHeader(name = "accountIds") String accountIds,
+                                                               HttpServletRequest request) {
+        long startTime = System.currentTimeMillis();
+        String jwtToken = request.getHeader("Authorization").substring(7);
+        String tokenUsername = jwtUtil.getUsernameFromToken(jwtToken);
+        User foundUser = userService.getUserByUserName(tokenUsername);
+        Long accountId = requestHeaderHandler.getAccountIdFromRequestHeader(accountIds);
+        ThreadContext.put("accountId", accountId.toString());
+        ThreadContext.put("userId", foundUser.getUserId().toString());
+        ThreadContext.put("requestOriginatingPage", screenName);
+        logger.info("Entered requestOrganizationDeletion method for orgId: {}", deletionRequest.getOrgId());
+
+        try {
+            OrgDeletionResponse response = organizationDeletionService.requestOrganizationDeletion(deletionRequest, accountId);
+            long estimatedTime = System.currentTimeMillis() - startTime;
+            ThreadContext.put("systemResponseTime", String.valueOf(estimatedTime));
+            logger.info("Exited requestOrganizationDeletion method successfully for orgId: {}", deletionRequest.getOrgId());
+            ThreadContext.clearMap();
+
+            if ("FAILED".equals(response.getStatus())) {
+                return CustomResponseHandler.generateCustomResponse(HttpStatus.BAD_REQUEST, Constants.FormattedResponse.BAD_REQUEST, response);
+            } else if ("ALREADY_PENDING".equals(response.getStatus())) {
+                return CustomResponseHandler.generateCustomResponse(HttpStatus.CONFLICT, Constants.FormattedResponse.WARNING, response);
+            }
+            return CustomResponseHandler.generateCustomResponse(HttpStatus.OK, Constants.FormattedResponse.SUCCESS, response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            String allStackTraces = StackTraceHandler.getAllStackTraces(e);
+            logger.error(request.getRequestURI() + " API: Something went wrong: Not able to request organization deletion for orgId = " + deletionRequest.getOrgId() + " Caught Exception: " + e, new Throwable(allStackTraces));
+            ThreadContext.clearMap();
+            if (e.getMessage() == null) throw new InternalServerErrorException("Internal Server Error!");
+            else throw e;
+        }
+    }
+
+    @PostMapping(path = "/reverseDeletion")
+    public ResponseEntity<Object> reverseOrganizationDeletion(@Valid @RequestBody ReverseOrgDeletionRequest reversalRequest,
+                                                               @RequestHeader(name = "screenName") String screenName,
+                                                               @RequestHeader(name = "timeZone") String timeZone,
+                                                               @RequestHeader(name = "accountIds") String accountIds,
+                                                               HttpServletRequest request) {
+        long startTime = System.currentTimeMillis();
+        String jwtToken = request.getHeader("Authorization").substring(7);
+        String tokenUsername = jwtUtil.getUsernameFromToken(jwtToken);
+        User foundUser = userService.getUserByUserName(tokenUsername);
+        Long accountId = requestHeaderHandler.getAccountIdFromRequestHeader(accountIds);
+        ThreadContext.put("accountId", accountId.toString());
+        ThreadContext.put("userId", foundUser.getUserId().toString());
+        ThreadContext.put("requestOriginatingPage", screenName);
+        logger.info("Entered reverseOrganizationDeletion method for orgId: {}", reversalRequest.getOrgId());
+
+        try {
+            OrgDeletionResponse response = organizationDeletionService.reverseOrganizationDeletion(reversalRequest, accountId);
+            long estimatedTime = System.currentTimeMillis() - startTime;
+            ThreadContext.put("systemResponseTime", String.valueOf(estimatedTime));
+            logger.info("Exited reverseOrganizationDeletion method successfully for orgId: {}", reversalRequest.getOrgId());
+            ThreadContext.clearMap();
+
+            if ("FAILED".equals(response.getStatus())) {
+                return CustomResponseHandler.generateCustomResponse(HttpStatus.BAD_REQUEST, Constants.FormattedResponse.BAD_REQUEST, response);
+            } else if ("NOT_PENDING".equals(response.getStatus())) {
+                return CustomResponseHandler.generateCustomResponse(HttpStatus.BAD_REQUEST, Constants.FormattedResponse.WARNING, response);
+            }
+            return CustomResponseHandler.generateCustomResponse(HttpStatus.OK, Constants.FormattedResponse.SUCCESS, response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            String allStackTraces = StackTraceHandler.getAllStackTraces(e);
+            logger.error(request.getRequestURI() + " API: Something went wrong: Not able to reverse organization deletion for orgId = " + reversalRequest.getOrgId() + " Caught Exception: " + e, new Throwable(allStackTraces));
+            ThreadContext.clearMap();
+            if (e.getMessage() == null) throw new InternalServerErrorException("Internal Server Error!");
+            else throw e;
+        }
+    }
+
+    @PostMapping(path = "/processScheduledDeletions")
+    public ResponseEntity<Object> processScheduledDeletions(@RequestHeader(name = "screenName") String screenName,
+                                                             @RequestHeader(name = "timeZone") String timeZone,
+                                                             @RequestHeader(name = "accountIds") String accountIds,
+                                                             HttpServletRequest request) {
+        long startTime = System.currentTimeMillis();
+        String jwtToken = request.getHeader("Authorization").substring(7);
+        String tokenUsername = jwtUtil.getUsernameFromToken(jwtToken);
+        User foundUser = userService.getUserByUserName(tokenUsername);
+        Long accountId = requestHeaderHandler.getAccountIdFromRequestHeader(accountIds);
+        ThreadContext.put("accountId", accountId.toString());
+        ThreadContext.put("userId", foundUser.getUserId().toString());
+        ThreadContext.put("requestOriginatingPage", screenName);
+        logger.info("Entered processScheduledDeletions method");
+
+        try {
+            List<OrgDeletionResponse> responses = organizationDeletionService.processScheduledDeletions();
+            long estimatedTime = System.currentTimeMillis() - startTime;
+            ThreadContext.put("systemResponseTime", String.valueOf(estimatedTime));
+            logger.info("Exited processScheduledDeletions method successfully. Processed {} organizations", responses.size());
+            ThreadContext.clearMap();
+
+            return CustomResponseHandler.generateCustomResponse(HttpStatus.OK, Constants.FormattedResponse.SUCCESS, responses);
+        } catch (Exception e) {
+            e.printStackTrace();
+            String allStackTraces = StackTraceHandler.getAllStackTraces(e);
+            logger.error(request.getRequestURI() + " API: Something went wrong: Not able to process scheduled deletions. Caught Exception: " + e, new Throwable(allStackTraces));
+            ThreadContext.clearMap();
+            if (e.getMessage() == null) throw new InternalServerErrorException("Internal Server Error!");
+            else throw e;
+        }
+    }
+
+    @GetMapping(path = "/pendingDeletions")
+    public ResponseEntity<Object> getPendingDeletions(@RequestHeader(name = "screenName") String screenName,
+                                                       @RequestHeader(name = "timeZone") String timeZone,
+                                                       @RequestHeader(name = "accountIds") String accountIds,
+                                                       HttpServletRequest request) {
+        long startTime = System.currentTimeMillis();
+        String jwtToken = request.getHeader("Authorization").substring(7);
+        String tokenUsername = jwtUtil.getUsernameFromToken(jwtToken);
+        User foundUser = userService.getUserByUserName(tokenUsername);
+        Long accountId = requestHeaderHandler.getAccountIdFromRequestHeader(accountIds);
+        ThreadContext.put("accountId", accountId.toString());
+        ThreadContext.put("userId", foundUser.getUserId().toString());
+        ThreadContext.put("requestOriginatingPage", screenName);
+        logger.info("Entered getPendingDeletions method");
+
+        try {
+            List<Organization> pendingOrgs = organizationRepository.findOrganizationsPendingDeletion();
+            long estimatedTime = System.currentTimeMillis() - startTime;
+            ThreadContext.put("systemResponseTime", String.valueOf(estimatedTime));
+            logger.info("Exited getPendingDeletions method successfully. Found {} pending organizations", pendingOrgs.size());
+            ThreadContext.clearMap();
+
+            return CustomResponseHandler.generateCustomResponse(HttpStatus.OK, Constants.FormattedResponse.SUCCESS, pendingOrgs);
+        } catch (Exception e) {
+            e.printStackTrace();
+            String allStackTraces = StackTraceHandler.getAllStackTraces(e);
+            logger.error(request.getRequestURI() + " API: Something went wrong: Not able to get pending deletions. Caught Exception: " + e, new Throwable(allStackTraces));
             ThreadContext.clearMap();
             if (e.getMessage() == null) throw new InternalServerErrorException("Internal Server Error!");
             else throw e;

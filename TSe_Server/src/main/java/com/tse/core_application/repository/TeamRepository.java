@@ -183,4 +183,12 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
 
     @Query("select Distinct t.teamId from Team t where t.fkProjectId.projectId in :projectIdList and (t.isDeleted = false or t.isDeleted is null) and t.isDisabled = false")
     List<Long> findTeamIdsByProjectIds(List<Long> projectIdList);
+
+    @Query("SELECT t.teamId FROM Team t WHERE t.fkOrgId.orgId = :orgId")
+    List<Long> findAllTeamIdsByOrgId(Long orgId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Team t WHERE t.fkOrgId.orgId = :orgId")
+    void deleteAllByOrgId(Long orgId);
 }

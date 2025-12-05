@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Organization Deletion Reversed</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #28a745;">Organization Deletion Reversed</h2>
+
+    <p>Dear Organization Administrator,</p>
+
+    <p>Great news! The deletion request for organization <strong th:text="${organizationName}">Organization Name</strong> has been reversed by the Super Administrator.</p>
+
+    <div style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #28a745;">What This Means</h3>
+        <ul>
+            <li>All previously deactivated user accounts have been reactivated.</li>
+            <li>Users can now access the organization and its data again.</li>
+            <li>The scheduled deletion has been cancelled.</li>
+            <li>Your organization is back to normal operation.</li>
+        </ul>
+    </div>
+
+    <p>If you have any questions, please contact your Super Administrator.</p>
+
+    <p th:if="${envIndicator != null}" th:text="${envIndicator}" style="color: gray; font-style: italic;"></p>
+
+    <p>Regards,<br/>Vijayi WFH Technologies Private Limited</p>
+</div>
+</body>
+</html>

@@ -41,4 +41,9 @@ public interface MessageAttachmentRepository extends JpaRepository<MessageAttach
             "FROM MessageAttachment m " +
             "WHERE m.messageAttachmentId IN :messageAttachmentId AND m.fileStatus =:fileStatus ")
     Optional<List<FileMetadata>> findMetadataFromAttachmentIdIn(List<Long> messageAttachmentId, Character fileStatus);
+
+    @Transactional
+    @Modifying
+    @Query("DELETE FROM MessageAttachment ma WHERE ma.messageId IN (SELECT m.messageId FROM Message m WHERE m.groupId IN :groupIds)")
+    void deleteByGroupIdIn(@Param("groupIds") List<Long> groupIds);
 }

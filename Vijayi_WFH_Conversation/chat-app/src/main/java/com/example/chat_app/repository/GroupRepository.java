@@ -73,4 +73,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
 
     @Query(value = "Select Count(g.groupId) from Group g where g.name =:name")
     Integer findGroupByName(@Param("name") String name);
+
+    List<Group> findByOrgId(Long orgId);
 }

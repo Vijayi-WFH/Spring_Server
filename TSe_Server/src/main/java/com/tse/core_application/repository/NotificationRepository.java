@@ -120,4 +120,9 @@ public interface NotificationRepository extends JpaRepository<Notification,Long>
             @Param("fromDate") LocalDate fromDate,
             @Param("toDate") LocalDate toDate
     );
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Notification n WHERE n.orgId.orgId = :orgId")
+    void deleteAllByOrgId(Long orgId);
 }

@@ -79,4 +79,29 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
 
 	@Query("select new com.tse.core_application.custom.model.OrgIdOrgName(o.orgId, o.organizationName) from Organization o where o.orgId IN :orgIdList and (o.isDisabled is null or o.isDisabled = false)")
 	List<OrgIdOrgName> findOrgIdAndOrganizationNameByOrgId(List<Long> orgIdList);
+
+	@Query("SELECT o FROM Organization o WHERE o.isDeletionRequested = true AND o.scheduledDeletionDate <= CURRENT_TIMESTAMP")
+	List<Organization> findOrganizationsScheduledForDeletion();
+
+	@Query("SELECT o FROM Organization o WHERE o.isDeletionRequested = true")
+	List<Organization> findOrganizationsPendingDeletion();
+
+	@Modifying
+	@Transactional
+	@Query("UPDATE Organization o SET o.isDeletionRequested = :isDeletionRequested, o.deletionRequestedAt = :deletionRequestedAt, " +
+			"o.deletionRequestedByAccountId = :deletionRequestedByAccountId, o.deletionReason = :deletionReason, " +
+			"o.scheduledDeletionDate = :scheduledDeletionDate WHERE o.orgId = :orgId")
+	void updateDeletionRequestFields(@Param("orgId") Long orgId,
+									 @Param("isDeletionRequested") Boolean isDeletionRequested,
+									 @Param("deletionRequestedAt") java.sql.Timestamp deletionRequestedAt,
+									 @Param("deletionRequestedByAccountId") Long deletionRequestedByAccountId,
+									 @Param("deletionReason") String deletionReason,
+									 @Param("scheduledDeletionDate") java.sql.Timestamp scheduledDeletionDate);
+
+	@Modifying
+	@Transactional
+	@Query("UPDATE Organization o SET o.isDeletionRequested = false, o.deletionRequestedAt = null, " +
+			"o.deletionRequestedByAccountId = null, o.deletionReason = null, " +
+			"o.scheduledDeletionDate = null WHERE o.orgId = :orgId")
+	void clearDeletionRequestFields(@Param("orgId") Long orgId);
 }

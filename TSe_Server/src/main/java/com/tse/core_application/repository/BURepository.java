@@ -46,4 +46,12 @@ public interface BURepository extends JpaRepository<BU, Long> {
 
     @Query("SELECT count(b) FROM BU b WHERE b.orgId = :orgId")
     Integer findBuCountByOrgId (Long orgId);
+
+    @Query("SELECT b.buId FROM BU b WHERE b.orgId = :orgId")
+    List<Long> findAllBuIdsByOrgId(Long orgId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM BU b WHERE b.orgId = :orgId")
+    void deleteAllByOrgId(Long orgId);
 }

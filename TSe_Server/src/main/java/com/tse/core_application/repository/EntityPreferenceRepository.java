@@ -5,8 +5,10 @@ import com.tse.core_application.model.EntityPreference;
 import com.tse.core_application.model.HolidayOffDay;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -48,4 +50,9 @@ public interface EntityPreferenceRepository extends JpaRepository<EntityPreferen
 
     @Query("SELECT ep.entityId FROM EntityPreference ep WHERE ep.entityTypeId = :entityTypeId AND ep.entityId IN :entityIdList AND ep.isGeoFencingAllowed = :isGeoFencingAllowed AND ep.isGeoFencingActive = :isGeoFencingActive")
     List<Long> findEntityIdsByEntityTypeIdAndEntityIdInAndIsGeoFencingAllowedAndIsGeoFencingActive(Integer entityTypeId, List<Long> entityIdList, Boolean isGeoFencingAllowed, Boolean isGeoFencingActive);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM EntityPreference ep WHERE ep.entityTypeId = :entityTypeId AND ep.entityId = :entityId")
+    void deleteByEntityTypeIdAndEntityId(Integer entityTypeId, Long entityId);
 }

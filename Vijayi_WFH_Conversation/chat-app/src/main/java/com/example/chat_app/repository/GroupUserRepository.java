@@ -38,4 +38,8 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, GroupUserI
 
     @Query(value = "SELECT gu.user.accountId FROM GroupUser gu where gu.group.groupId = :groupId and gu.isDeleted =:isDeleted")
     List<Long> findAllAccountIdByGroupIdAndIsDeleted(@Param("groupId") Long groupId, @Param("isDeleted") Boolean isDeleted);
+
+    @Modifying
+    @Query("DELETE FROM GroupUser gu WHERE gu.group.groupId IN :groupIds")
+    void deleteByGroupIdIn(@Param("groupIds") List<Long> groupIds);
 }

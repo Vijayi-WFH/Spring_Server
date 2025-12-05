@@ -101,4 +101,14 @@ public interface MessageUserRepository extends JpaRepository<MessageUser, Messag
     @Query("SELECT NEW com.example.chat_app.dto.MessageDTO(mu.message.messageId ,m.senderId, m.receiverId, m.groupId, mu.user.accountId) " +
             "From MessageUser mu JOIN Message m on mu.message.messageId = m.messageId where mu.isRead = :isRead and mu.user.accountId IN :accountIds")
     List<MessageDTO> findUnreadMessagesByAccountIdIn(@Param("isRead") Boolean isRead, @Param("accountIds") List<Long> accountIds);
+
+    @Transactional
+    @Modifying
+    @Query("DELETE FROM MessageUser mu WHERE mu.message.messageId IN (SELECT m.messageId FROM Message m WHERE m.groupId IN :groupIds)")
+    void deleteByGroupIdIn(@Param("groupIds") List<Long> groupIds);
+
+    @Transactional
+    @Modifying
+    @Query("DELETE FROM MessageUser mu WHERE mu.user.accountId IN :userIds")
+    void deleteByUserIdIn(@Param("userIds") List<Long> userIds);
 }

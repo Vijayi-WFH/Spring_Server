@@ -165,4 +165,8 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
             "OR (:fieldName = 'teamId' AND m.teamId =:entityId)) AND m.meetingNumber=:meetingNumber")
     Meeting findMeetingByEntityAndMeetingNumber(@Param("fieldName") String fieldName,
                                                 @Param("entityId") Long entityId, @Param("meetingNumber") String meetingNumber);
+
+    @Modifying
+    @Query("DELETE FROM Meeting m WHERE m.orgId = :orgId")
+    void deleteAllByOrgId(Long orgId);
 }

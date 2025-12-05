@@ -114,5 +114,10 @@ public interface StickyNoteRepository extends JpaRepository<StickyNote, Long> {
 
     @Query("SELECT count(s) FROM StickyNote s WHERE s.orgId = :orgId")
     Integer findStickyNotesCountByOrgId(Long orgId);
+
+    @Transactional
+    @Modifying
+    @Query("DELETE FROM StickyNote s WHERE s.createdByAccountId IN :accountIds")
+    void deleteAllByAccountIdIn(List<Long> accountIds);
 }
 

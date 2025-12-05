@@ -4,6 +4,7 @@ import com.example.chat_app.model.Message;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -103,5 +104,13 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
                                             @Param("messageId") Long messageId, Pageable pageable);
 
     Optional<Message> findByMessageIdAndIsDeleted(Long messageId, Boolean isDeleted);
+
+    @Modifying
+    @Query("DELETE FROM Message m WHERE m.groupId IN :groupIds")
+    void deleteByGroupIdIn(@Param("groupIds") List<Long> groupIds);
+
+    @Modifying
+    @Query("DELETE FROM Message m WHERE m.senderId IN :senderIds OR m.receiverId IN :receiverIds")
+    void deleteBySenderIdInOrReceiverIdIn(@Param("senderIds") List<Long> senderIds, @Param("receiverIds") List<Long> receiverIds);
 
 }
