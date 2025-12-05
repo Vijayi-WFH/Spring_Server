@@ -74,7 +74,17 @@ public class Organization {
 
 	@Column(name = "on_trial")
 	private Boolean onTrial;
-	
+
+	// Organization deletion fields
+	@Column(name = "org_deletion_requested")
+	private Boolean orgDeletionRequested = false;
+
+	@Column(name = "org_deletion_requested_at")
+	private Timestamp orgDeletionRequestedAt;
+
+	@Column(name = "deletion_requested_by_account_id")
+	private Long deletionRequestedByAccountId;
+
 	public Organization getOrgFromRegistrationReq(RegistrationRequest req) {
 		this.setOrganizationName(req.getOrganizationName());
 		this.setOrganizationDisplayName(req.getOrganizationName());

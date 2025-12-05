@@ -91,4 +91,32 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     @Query("SELECT DISTINCT p.projectId FROM Project p where p.buId In :buIdList And (p.isDeleted = false Or p.isDeleted is null) and p.isDisabled = false")
     List<Long> findProjectIdsByBuIdIn(List<Long> buIdList);
+
+    // ==================== Organization Deletion Methods ====================
+
+    /**
+     * Count all projects by org ID (including deleted) for statistics.
+     */
+    @Query("SELECT COUNT(p) FROM Project p WHERE p.orgId = :orgId")
+    Integer countByOrgId(@Param("orgId") Long orgId);
+
+    /**
+     * Count deleted projects by org ID for statistics.
+     */
+    @Query("SELECT COUNT(p) FROM Project p WHERE p.orgId = :orgId AND p.isDeleted = true")
+    Integer countDeletedByOrgId(@Param("orgId") Long orgId);
+
+    /**
+     * Get all project IDs for an organization.
+     */
+    @Query("SELECT p.projectId FROM Project p WHERE p.orgId = :orgId")
+    List<Long> findProjectIdsByOrgId(@Param("orgId") Long orgId);
+
+    /**
+     * Hard delete all projects for an organization.
+     */
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Project p WHERE p.orgId = :orgId")
+    void deleteByOrgId(@Param("orgId") Long orgId);
 }

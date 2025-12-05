@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Organization Deletion Reversed</title>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+<p>Hello,</p>
+
+<p>Great news! The deletion request for your organization <strong th:text="${orgName}">Organization Name</strong> has been reversed by the Super Admin.</p>
+
+<div style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <p style="margin: 0; color: #155724;"><strong>Organization Restored:</strong></p>
+    <ul style="margin: 10px 0;">
+        <li>Your organization is now active again.</li>
+        <li>All user accounts that were deactivated due to the deletion request have been reactivated.</li>
+        <li>Users can now access the organization as before.</li>
+    </ul>
+</div>
+
+<p>No data has been lost and all organization data remains intact. Users may need to log in again to access their accounts.</p>
+
+<p>If you have any questions, please contact your Super Admin or support team.</p>
+
+<br/>
+<p>Best Regards,<br/>TSe Support Team</p>
+</body>
+</html>

@@ -13,6 +13,10 @@ import com.tse.core_application.handlers.StackTraceHandler;
 import com.tse.core_application.model.*;
 import com.tse.core_application.model.User;
 import com.tse.core_application.repository.*;
+import com.tse.core_application.dto.org_deletion.OrgDeletionResponse;
+import com.tse.core_application.dto.org_deletion.RequestOrgDeletionRequest;
+import com.tse.core_application.dto.org_deletion.ReverseOrgDeletionRequest;
+import com.tse.core_application.service.IOrgDeletionService;
 import com.tse.core_application.service.Impl.*;
 import com.tse.core_application.utils.CommonUtils;
 import com.tse.core_application.utils.JWTUtil;
@@ -79,6 +83,9 @@ public class OrganizationController {
 
     @Autowired
     private SuperAdminService superAdminService;
+
+    @Autowired
+    private IOrgDeletionService orgDeletionService;
 
     //endpoint to get user's orgId, orgName by user's token
     @GetMapping(path = "/userAllOrganizationList")
@@ -872,6 +879,126 @@ public class OrganizationController {
             e.printStackTrace();
             String allStackTraces = StackTraceHandler.getAllStackTraces(e);
             logger.error(request.getRequestURI() + " API: " + "Something went wrong: Not able to deactivateAccountIdsInOrg for username = " + foundUser.getPrimaryEmail() + "Caught Exception: " + e, new Throwable(allStackTraces));
+            ThreadContext.clearMap();
+            if (e.getMessage() == null) throw new InternalServerErrorException("Internal Server Error!");
+            else throw e;
+        }
+    }
+
+    // ==================== Organization Deletion Endpoints ====================
+
+    /**
+     * API 1: Request Organization Deletion (Org Admin)
+     * Marks the organization as pending deletion, deactivates all user accounts,
+     * and schedules hard deletion after 30-day grace period.
+     */
+    @DeleteMapping(path = "/requestDeletion")
+    @Transactional
+    public ResponseEntity<Object> requestOrgDeletion(@Valid @RequestBody RequestOrgDeletionRequest request,
+                                                      @RequestHeader(name = "screenName") String screenName,
+                                                      @RequestHeader(name = "timeZone") String timeZone,
+                                                      @RequestHeader(name = "accountIds") String accountIds,
+                                                      HttpServletRequest httpRequest) {
+        long startTime = System.currentTimeMillis();
+        String jwtToken = httpRequest.getHeader("Authorization").substring(7);
+        String tokenUsername = jwtUtil.getUsernameFromToken(jwtToken);
+        User foundUser = userService.getUserByUserName(tokenUsername);
+        Long accountId = requestHeaderHandler.getAccountIdFromRequestHeader(accountIds);
+        ThreadContext.put("accountId", accountId.toString());
+        ThreadContext.put("userId", foundUser.getUserId().toString());
+        ThreadContext.put("requestOriginatingPage", screenName);
+        logger.info("Entered \"requestOrgDeletion\" method for orgId: " + request.getOrgId() + " ...");
+
+        try {
+            OrgDeletionResponse response = orgDeletionService.requestOrgDeletion(
+                    request.getOrgId(),
+                    accountId,
+                    request.getReason()
+            );
+            long estimatedTime = System.currentTimeMillis() - startTime;
+            ThreadContext.put("systemResponseTime", String.valueOf(estimatedTime));
+            logger.info("Exited \"requestOrgDeletion\" method because completed successfully ...");
+            ThreadContext.clearMap();
+            return CustomResponseHandler.generateCustomResponse(HttpStatus.OK, Constants.FormattedResponse.SUCCESS, response);
+        } catch (Exception e) {
+            String allStackTraces = StackTraceHandler.getAllStackTraces(e);
+            logger.error(httpRequest.getRequestURI() + " API: Something went wrong: Not able to request org deletion for orgId = " +
+                    request.getOrgId() + " by accountId = " + accountId + ". Caught Exception: " + e, new Throwable(allStackTraces));
+            ThreadContext.clearMap();
+            if (e instanceof ValidationFailedException) throw e;
+            if (e.getMessage() == null) throw new InternalServerErrorException("Internal Server Error!");
+            else throw e;
+        }
+    }
+
+    /**
+     * API 2: Reverse Organization Deletion (Super Admin)
+     * Reverses the pending deletion, reactivates all user accounts.
+     */
+    @PostMapping(path = "/reverseDeletion")
+    @Transactional
+    public ResponseEntity<Object> reverseOrgDeletion(@Valid @RequestBody ReverseOrgDeletionRequest request,
+                                                      @RequestHeader(name = "screenName") String screenName,
+                                                      @RequestHeader(name = "timeZone") String timeZone,
+                                                      @RequestHeader(name = "accountIds") String accountIds,
+                                                      HttpServletRequest httpRequest) {
+        long startTime = System.currentTimeMillis();
+        String jwtToken = httpRequest.getHeader("Authorization").substring(7);
+        String tokenUsername = jwtUtil.getUsernameFromToken(jwtToken);
+        User foundUser = userService.getUserByUserName(tokenUsername);
+        Long accountId = requestHeaderHandler.getAccountIdFromRequestHeader(accountIds);
+        ThreadContext.put("accountId", accountId.toString());
+        ThreadContext.put("userId", foundUser.getUserId().toString());
+        ThreadContext.put("requestOriginatingPage", screenName);
+        logger.info("Entered \"reverseOrgDeletion\" method for orgId: " + request.getOrgId() + " ...");
+
+        try {
+            OrgDeletionResponse response = orgDeletionService.reverseOrgDeletion(
+                    request.getOrgId(),
+                    accountId
+            );
+            long estimatedTime = System.currentTimeMillis() - startTime;
+            ThreadContext.put("systemResponseTime", String.valueOf(estimatedTime));
+            logger.info("Exited \"reverseOrgDeletion\" method because completed successfully ...");
+            ThreadContext.clearMap();
+            return CustomResponseHandler.generateCustomResponse(HttpStatus.OK, Constants.FormattedResponse.SUCCESS, response);
+        } catch (Exception e) {
+            String allStackTraces = StackTraceHandler.getAllStackTraces(e);
+            logger.error(httpRequest.getRequestURI() + " API: Something went wrong: Not able to reverse org deletion for orgId = " +
+                    request.getOrgId() + " by accountId = " + accountId + ". Caught Exception: " + e, new Throwable(allStackTraces));
+            ThreadContext.clearMap();
+            if (e instanceof ValidationFailedException) throw e;
+            if (e.getMessage() == null) throw new InternalServerErrorException("Internal Server Error!");
+            else throw e;
+        }
+    }
+
+    /**
+     * API 3: Hard Delete Organizations (Internal - Scheduler)
+     * Processes all organizations past the 30-day grace period for permanent deletion.
+     * This endpoint should be called by the scheduler service.
+     */
+    @PostMapping(path = "/hardDelete")
+    @Transactional
+    public ResponseEntity<Object> hardDeleteOrganizations(@RequestHeader(name = "screenName") String screenName,
+                                                           @RequestHeader(name = "timeZone") String timeZone,
+                                                           HttpServletRequest httpRequest) {
+        long startTime = System.currentTimeMillis();
+        ThreadContext.put("requestOriginatingPage", screenName);
+        logger.info("Entered \"hardDeleteOrganizations\" method (scheduler triggered) ...");
+
+        try {
+            orgDeletionService.processScheduledDeletions();
+            long estimatedTime = System.currentTimeMillis() - startTime;
+            ThreadContext.put("systemResponseTime", String.valueOf(estimatedTime));
+            logger.info("Exited \"hardDeleteOrganizations\" method because completed successfully ...");
+            ThreadContext.clearMap();
+            return CustomResponseHandler.generateCustomResponse(HttpStatus.OK, Constants.FormattedResponse.SUCCESS,
+                    "Scheduled organization deletions processed successfully");
+        } catch (Exception e) {
+            String allStackTraces = StackTraceHandler.getAllStackTraces(e);
+            logger.error(httpRequest.getRequestURI() + " API: Something went wrong during hard delete processing. Caught Exception: " + e,
+                    new Throwable(allStackTraces));
             ThreadContext.clearMap();
             if (e.getMessage() == null) throw new InternalServerErrorException("Internal Server Error!");
             else throw e;

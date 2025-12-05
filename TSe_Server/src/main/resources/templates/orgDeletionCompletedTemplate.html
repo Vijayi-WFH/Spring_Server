@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Organization Deletion Completed</title>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+<p>Hello,</p>
+
+<p>This is to confirm that the organization <strong th:text="${orgName}">Organization Name</strong> has been permanently deleted.</p>
+
+<div style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <p style="margin: 0;"><strong>Deletion Summary:</strong></p>
+    <ul style="margin: 10px 0;">
+        <li>Organization name: <span th:text="${orgName}">Organization Name</span></li>
+        <li>Status: Permanently Deleted</li>
+        <li>All associated data has been removed from our systems.</li>
+    </ul>
+</div>
+
+<p>The following data has been permanently deleted:</p>
+<ul>
+    <li>All user accounts associated with this organization</li>
+    <li>All business units, projects, and teams</li>
+    <li>All tasks, meetings, and sprints</li>
+    <li>All comments, notes, and attachments</li>
+    <li>All chat messages and conversations</li>
+    <li>All leave applications and attendance records</li>
+</ul>
+
+<p>A summary of the organization statistics has been retained for audit purposes.</p>
+
+<p>If you believe this deletion was performed in error, please contact our support team immediately.</p>
+
+<br/>
+<p>Best Regards,<br/>TSe Support Team</p>
+</body>
+</html>

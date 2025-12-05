@@ -97,6 +97,11 @@ public class ControllerConstants {
 
 		public static final String activateDeactivateUser = "/api/users/v2/deleteUser";
 		public static final String getAllUsers = "/api/users/all";
+
+		// Organization Deletion related endpoints
+		public static final String deactivateUser = "/api/users/deactivate/{accountId}";
+		public static final String reactivateUser = "/api/users/reactivate/{accountId}";
+		public static final String deleteOrgData = "/api/org/delete/{orgId}";
 	}
 
 	public static class JitsiApi{

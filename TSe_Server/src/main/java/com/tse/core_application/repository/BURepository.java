@@ -46,4 +46,26 @@ public interface BURepository extends JpaRepository<BU, Long> {
 
     @Query("SELECT count(b) FROM BU b WHERE b.orgId = :orgId")
     Integer findBuCountByOrgId (Long orgId);
+
+    // ==================== Organization Deletion Methods ====================
+
+    /**
+     * Count BUs by org ID for statistics.
+     */
+    @Query("SELECT COUNT(b) FROM BU b WHERE b.orgId = :orgId")
+    Integer countByOrgId(Long orgId);
+
+    /**
+     * Get all BU IDs for an organization.
+     */
+    @Query("SELECT b.buId FROM BU b WHERE b.orgId = :orgId")
+    List<Long> findBuIdsByOrgId(Long orgId);
+
+    /**
+     * Hard delete all BUs for an organization.
+     */
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM BU b WHERE b.orgId = :orgId")
+    void deleteByOrgId(Long orgId);
 }

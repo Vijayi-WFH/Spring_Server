@@ -25,6 +25,8 @@ import org.thymeleaf.context.Context;
 import javax.mail.internet.MimeMessage;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -314,6 +316,106 @@ public class EmailService implements IEMailService {
         context.setVariable("organizationName", organizationName);
 
         return templateEngine.process("declinedInviteEmailTemplate", context);
+    }
+
+    // ==================== Organization Deletion Email Methods ====================
+
+    @Override
+    public void sendOrgDeletionRequestedEmail(String toEmail, String orgName, LocalDate deletionScheduledDate) {
+        try {
+            String formattedDate = deletionScheduledDate.format(DateTimeFormatter.ofPattern("MMMM dd, yyyy"));
+
+            Context context = new Context();
+            context.setVariable("orgName", orgName);
+            context.setVariable("deletionDate", formattedDate);
+
+            String content = templateEngine.process("orgDeletionRequestedTemplate", context);
+
+            MimeMessage message = emailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+            helper.setTo(toEmail);
+            helper.setSubject("Organization Deletion Requested - " + orgName);
+            helper.setText(content, true);
+            helper.setFrom(username);
+
+            emailSender.send(message);
+            logger.info("Org deletion requested email sent to: " + toEmail);
+        } catch (Exception e) {
+            logger.error("Failed to send org deletion requested email to " + toEmail, e);
+        }
+    }
+
+    @Override
+    public void sendOrgDeletionReversedEmail(String toEmail, String orgName) {
+        try {
+            Context context = new Context();
+            context.setVariable("orgName", orgName);
+
+            String content = templateEngine.process("orgDeletionReversedTemplate", context);
+
+            MimeMessage message = emailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+            helper.setTo(toEmail);
+            helper.setSubject("Organization Deletion Reversed - " + orgName);
+            helper.setText(content, true);
+            helper.setFrom(username);
+
+            emailSender.send(message);
+            logger.info("Org deletion reversed email sent to: " + toEmail);
+        } catch (Exception e) {
+            logger.error("Failed to send org deletion reversed email to " + toEmail, e);
+        }
+    }
+
+    @Override
+    public void sendOrgDeletionCompletedEmail(String toEmail, String orgName) {
+        try {
+            Context context = new Context();
+            context.setVariable("orgName", orgName);
+
+            String content = templateEngine.process("orgDeletionCompletedTemplate", context);
+
+            MimeMessage message = emailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+            helper.setTo(toEmail);
+            helper.setSubject("Organization Deletion Completed - " + orgName);
+            helper.setText(content, true);
+            helper.setFrom(username);
+
+            emailSender.send(message);
+            logger.info("Org deletion completed email sent to: " + toEmail);
+        } catch (Exception e) {
+            logger.error("Failed to send org deletion completed email to " + toEmail, e);
+        }
+    }
+
+    @Override
+    public void sendOrgDeletionFailedEmail(String adminEmail, String orgName, Long orgId, String errorDetails) {
+        try {
+            Context context = new Context();
+            context.setVariable("orgName", orgName);
+            context.setVariable("orgId", orgId);
+            context.setVariable("errorDetails", errorDetails);
+            context.setVariable("timestamp", LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM dd, yyyy HH:mm:ss")));
+
+            String content = templateEngine.process("orgDeletionFailedTemplate", context);
+
+            MimeMessage message = emailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+            helper.setTo(adminEmail);
+            helper.setSubject("[ALERT] Organization Deletion Failed - " + orgName);
+            helper.setText(content, true);
+            helper.setFrom(username);
+
+            emailSender.send(message);
+            logger.info("Org deletion failed email sent to: " + adminEmail);
+        } catch (Exception e) {
+            logger.error("Failed to send org deletion failed email to " + adminEmail, e);
+        }
     }
 
 }

@@ -401,4 +401,22 @@ public interface AccessDomainRepository extends JpaRepository<AccessDomain, Long
             @Param("orgId") Long orgId,
             @Param("orgAdminRoleIds") List<Integer> orgAdminRoleIds
     );
+
+    // ==================== Organization Deletion Methods ====================
+
+    /**
+     * Hard delete access domains by entity type and entity ID.
+     */
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM AccessDomain a WHERE a.entityTypeId = :entityTypeId AND a.entityId = :entityId")
+    void deleteByEntityTypeIdAndEntityId(@Param("entityTypeId") Integer entityTypeId, @Param("entityId") Long entityId);
+
+    /**
+     * Hard delete access domains by account ID.
+     */
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM AccessDomain a WHERE a.accountId = :accountId")
+    void deleteByAccountId(@Param("accountId") Long accountId);
 }

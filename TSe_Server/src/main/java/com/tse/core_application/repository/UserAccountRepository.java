@@ -295,4 +295,50 @@ public interface UserAccountRepository extends JpaRepository<UserAccount,Long> {
 
     @Query("Select ua.accountId from UserAccount ua where ua.isActive = true and ua.isRegisteredInAiService is Null")
     List<Long> findAllAccountIdByIsRegisteredInAiService(Boolean value);
+
+    // ==================== Organization Deletion Queries ====================
+
+    /**
+     * Get all account IDs for an organization.
+     */
+    @Query("SELECT ua.accountId FROM UserAccount ua WHERE ua.orgId = :orgId")
+    List<Long> findAllAccountIdsByOrgId(@Param("orgId") Long orgId);
+
+    /**
+     * Deactivate all accounts for an organization during deletion request.
+     * Sets isActive = false and isInactivatedOnOrgDeletion = true.
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE UserAccount ua SET ua.isActive = false, ua.isInactivatedOnOrgDeletion = true WHERE ua.orgId = :orgId AND ua.isActive = true")
+    int deactivateAllAccountsForOrgDeletion(@Param("orgId") Long orgId);
+
+    /**
+     * Reactivate accounts that were deactivated due to org deletion request.
+     * Only reactivates accounts where isInactivatedOnOrgDeletion = true.
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE UserAccount ua SET ua.isActive = true, ua.isInactivatedOnOrgDeletion = false WHERE ua.orgId = :orgId AND ua.isInactivatedOnOrgDeletion = true")
+    int reactivateAccountsForOrgDeletionReversal(@Param("orgId") Long orgId);
+
+    /**
+     * Find all account IDs that were deactivated due to org deletion.
+     */
+    @Query("SELECT ua.accountId FROM UserAccount ua WHERE ua.orgId = :orgId AND ua.isInactivatedOnOrgDeletion = true")
+    List<Long> findAccountIdsDeactivatedForOrgDeletion(@Param("orgId") Long orgId);
+
+    /**
+     * Hard delete all user accounts for an organization.
+     */
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM UserAccount ua WHERE ua.orgId = :orgId")
+    int hardDeleteByOrgId(@Param("orgId") Long orgId);
+
+    /**
+     * Get user IDs for accounts in an organization (to update Redis USERS hash).
+     */
+    @Query("SELECT DISTINCT ua.fkUserId.userId FROM UserAccount ua WHERE ua.orgId = :orgId")
+    List<Long> findDistinctUserIdsByOrgId(@Param("orgId") Long orgId);
 }

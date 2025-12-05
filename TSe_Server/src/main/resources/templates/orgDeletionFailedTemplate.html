@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Organization Deletion Failed - Alert</title>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+<p>Hello System Administrator,</p>
+
+<div style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <p style="margin: 0; color: #721c24;"><strong>ALERT: Organization Deletion Failed</strong></p>
+</div>
+
+<p>The scheduled hard deletion for the following organization has failed:</p>
+
+<div style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 5px; font-weight: bold;">Organization Name:</td>
+            <td style="padding: 5px;" th:text="${orgName}">Organization Name</td>
+        </tr>
+        <tr>
+            <td style="padding: 5px; font-weight: bold;">Organization ID:</td>
+            <td style="padding: 5px;" th:text="${orgId}">123</td>
+        </tr>
+        <tr>
+            <td style="padding: 5px; font-weight: bold;">Timestamp:</td>
+            <td style="padding: 5px;" th:text="${timestamp}">Date Time</td>
+        </tr>
+    </table>
+</div>
+
+<p><strong>Error Details:</strong></p>
+<div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 20px 0; overflow-x: auto;">
+    <code th:text="${errorDetails}">Error message</code>
+</div>
+
+<p><strong>Recommended Actions:</strong></p>
+<ul>
+    <li>Check the server logs for more detailed error information.</li>
+    <li>Verify database connectivity and integrity.</li>
+    <li>Check for any foreign key constraint violations.</li>
+    <li>The deletion will be retried in the next scheduled run.</li>
+    <li>Consider manual intervention if the issue persists.</li>
+</ul>
+
+<p>The organization remains in pending deletion state. Please investigate and resolve the issue.</p>
+
+<br/>
+<p>Best Regards,<br/>TSe Automated System</p>
+</body>
+</html>

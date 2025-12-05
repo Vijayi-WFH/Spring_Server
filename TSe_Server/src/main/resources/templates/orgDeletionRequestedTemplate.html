@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Organization Deletion Requested</title>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+<p>Hello,</p>
+
+<p>Your request to delete the organization <strong th:text="${orgName}">Organization Name</strong> has been received and processed.</p>
+
+<div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <p style="margin: 0;"><strong>Important Notice:</strong></p>
+    <ul style="margin: 10px 0;">
+        <li>All user accounts associated with this organization have been deactivated immediately.</li>
+        <li>Users will no longer be able to access the organization.</li>
+        <li>The organization and all its data will be permanently deleted on <strong th:text="${deletionDate}">Date</strong>.</li>
+    </ul>
+</div>
+
+<p><strong>Grace Period:</strong> You have 30 days from the deletion request date to reverse this action. After this period, all organization data including projects, teams, tasks, meetings, and user data will be permanently deleted and cannot be recovered.</p>
+
+<p>If you wish to cancel this deletion request, please contact your Super Admin immediately.</p>
+
+<div style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <p style="margin: 0; color: #721c24;"><strong>Warning:</strong> After the grace period ends, all data will be permanently deleted. This action cannot be undone.</p>
+</div>
+
+<p>If you did not request this deletion, please contact support immediately.</p>
+
+<br/>
+<p>Best Regards,<br/>TSe Support Team</p>
+</body>
+</html>

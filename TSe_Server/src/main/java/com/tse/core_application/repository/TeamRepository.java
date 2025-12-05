@@ -183,4 +183,26 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
 
     @Query("select Distinct t.teamId from Team t where t.fkProjectId.projectId in :projectIdList and (t.isDeleted = false or t.isDeleted is null) and t.isDisabled = false")
     List<Long> findTeamIdsByProjectIds(List<Long> projectIdList);
+
+    // ==================== Organization Deletion Methods ====================
+
+    /**
+     * Count all teams by org ID (including deleted) for statistics.
+     */
+    @Query("SELECT COUNT(t) FROM Team t WHERE t.fkOrgId.orgId = :orgId")
+    Integer countByOrgId(@Param("orgId") Long orgId);
+
+    /**
+     * Count deleted teams by org ID for statistics.
+     */
+    @Query("SELECT COUNT(t) FROM Team t WHERE t.fkOrgId.orgId = :orgId AND t.isDeleted = true")
+    Integer countDeletedByOrgId(@Param("orgId") Long orgId);
+
+    /**
+     * Hard delete all teams for an organization.
+     */
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Team t WHERE t.fkOrgId.orgId = :orgId")
+    void deleteByOrgId(@Param("orgId") Long orgId);
 }

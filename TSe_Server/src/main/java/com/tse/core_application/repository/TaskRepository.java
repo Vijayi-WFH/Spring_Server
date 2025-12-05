@@ -314,4 +314,20 @@ public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificat
     @Query("SELECT new com.tse.core_application.dto.meeting.WorkItemProgressDetailsDto(t.taskId, t.taskNumber, t.taskTypeId, t.fkAccountIdAssigned.accountId, " +
             "t.fkAccountIdAssigned.email, t.userPerceivedRemainingTimeForCompletion, t.taskProgressSystem, t.fkWorkflowTaskStatus.workflowTaskStatus) from Task t where taskId IN :taskIds ")
     List<WorkItemProgressDetailsDto> findWorkItemProgressByTaskIdIn(@Param("taskIds") List<Long> taskIds);
+
+    // ==================== Organization Deletion Methods ====================
+
+    /**
+     * Count tasks by org ID for statistics.
+     */
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.fkOrgId.orgId = :orgId")
+    Integer countByOrgId(@Param("orgId") Long orgId);
+
+    /**
+     * Hard delete all tasks for an organization.
+     */
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Task t WHERE t.fkOrgId.orgId = :orgId")
+    void deleteByOrgId(@Param("orgId") Long orgId);
 }

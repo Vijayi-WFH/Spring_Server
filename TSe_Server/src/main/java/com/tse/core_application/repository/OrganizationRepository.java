@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
@@ -79,4 +80,49 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
 
 	@Query("select new com.tse.core_application.custom.model.OrgIdOrgName(o.orgId, o.organizationName) from Organization o where o.orgId IN :orgIdList and (o.isDisabled is null or o.isDisabled = false)")
 	List<OrgIdOrgName> findOrgIdAndOrganizationNameByOrgId(List<Long> orgIdList);
+
+	// ==================== Organization Deletion Queries ====================
+
+	/**
+	 * Find organizations that have been requested for deletion and are past the grace period (30 days).
+	 * Used by the scheduler to identify orgs ready for hard deletion.
+	 */
+	@Query("SELECT o FROM Organization o WHERE o.orgDeletionRequested = true AND o.orgDeletionRequestedAt <= :cutoffDate")
+	List<Organization> findOrgsForHardDeletion(@Param("cutoffDate") Timestamp cutoffDate);
+
+	/**
+	 * Find organization by ID regardless of disabled status (for deletion operations).
+	 */
+	@Query("SELECT o FROM Organization o WHERE o.orgId = :orgId")
+	Optional<Organization> findByOrgIdForDeletion(@Param("orgId") Long orgId);
+
+	/**
+	 * Update organization deletion request status.
+	 */
+	@Modifying
+	@Transactional
+	@Query("UPDATE Organization o SET o.orgDeletionRequested = :requested, o.orgDeletionRequestedAt = :requestedAt, o.deletionRequestedByAccountId = :accountId WHERE o.orgId = :orgId")
+	void updateDeletionStatus(@Param("orgId") Long orgId, @Param("requested") Boolean requested, @Param("requestedAt") Timestamp requestedAt, @Param("accountId") Long accountId);
+
+	/**
+	 * Clear organization deletion request (for reversal).
+	 */
+	@Modifying
+	@Transactional
+	@Query("UPDATE Organization o SET o.orgDeletionRequested = false, o.orgDeletionRequestedAt = null, o.deletionRequestedByAccountId = null WHERE o.orgId = :orgId")
+	void clearDeletionRequest(@Param("orgId") Long orgId);
+
+	/**
+	 * Check if organization is pending deletion.
+	 */
+	@Query("SELECT CASE WHEN o.orgDeletionRequested = true THEN true ELSE false END FROM Organization o WHERE o.orgId = :orgId")
+	Boolean isOrgPendingDeletion(@Param("orgId") Long orgId);
+
+	/**
+	 * Hard delete organization by ID.
+	 */
+	@Modifying
+	@Transactional
+	@Query("DELETE FROM Organization o WHERE o.orgId = :orgId")
+	void hardDeleteByOrgId(@Param("orgId") Long orgId);
 }
