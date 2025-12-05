@@ -39,4 +39,5 @@ public class EntityPreferenceResponse {
     private Integer payRollGenerationDay;
     private Boolean isPayRollAtLastDayOfMonth;
     private Boolean isPayRollAtLastSecondDayOfMonth;
+    private Integer distanceUnitId;
 }

@@ -1,5 +1,6 @@
 package com.tse.core_application.service.Impl.geo_fencing.attendance;
 
+import com.tse.core_application.constants.DistanceUnitEnum;
 import com.tse.core_application.constants.RoleEnum;
 import com.tse.core_application.constants.geo_fencing.AttendanceStatus;
 import com.tse.core_application.constants.geo_fencing.EventKind;
@@ -29,6 +30,7 @@ import com.tse.core_application.service.Impl.UserFeatureAccessService;
 import com.tse.core_application.service.Impl.geo_fencing.fence.GeoFenceService;
 import com.tse.core_application.service.Impl.geo_fencing.policy.GeoFencingPolicyService;
 import com.tse.core_application.utils.DateTimeUtils;
+import com.tse.core_application.utils.geo_fencing.DistanceConversionUtil;
 import com.tse.core_application.utils.geo_fencing.GeoMath;
 import lombok.Getter;
 import lombok.Setter;
@@ -709,7 +711,10 @@ public class GeoFenceAttendanceDataService {
                     if (Boolean.TRUE.equals(event.getUnderRange())) {
                         punchEvent.setLocationLabel(fence.getName());
                     } else {
-                        punchEvent.setLocationLabel(String.format("%.2f km away from %s", distance / 1000.0, fence.getName()));
+                        // Fetch org's distance unit preference
+                        DistanceUnitEnum distanceUnit = getDistanceUnitForOrg(orgId);
+                        String formattedDistance = DistanceConversionUtil.formatDistanceLabel(distance, distanceUnit, fence.getName());
+                        punchEvent.setLocationLabel(formattedDistance);
                     }
                 } else {
                     punchEvent.setLocationLabel("Unknown");
@@ -1077,6 +1082,21 @@ public class GeoFenceAttendanceDataService {
         }
 
         return info;
+    }
+
+    /**
+     * Get the distance unit preference for an organization.
+     * Returns KM as default if not set.
+     *
+     * @param orgId the organization ID
+     * @return the DistanceUnitEnum (KM or MILES), defaults to KM
+     */
+    private DistanceUnitEnum getDistanceUnitForOrg(Long orgId) {
+        Optional<EntityPreference> orgPreference = entityPreferenceRepository.findByEntityTypeIdAndEntityId(Constants.EntityTypes.ORG, orgId);
+        if (orgPreference.isPresent() && orgPreference.get().getDistanceUnitId() != null) {
+            return DistanceUnitEnum.fromIdOrDefault(orgPreference.get().getDistanceUnitId());
+        }
+        return DistanceUnitEnum.KM;
     }
 
     /**
