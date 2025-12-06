@@ -426,4 +426,25 @@ public class Scheduler {
             logger.error(LocalDateTime.now() + ". Caught error in expiredLeaveApplicationNotificationScheduler: " + e);
         }
     }
+
+    /**
+     * Scheduled job: Process scheduled organization deletions.
+     * Runs daily at midnight (00:00).
+     * Organizations that have been marked for deletion and passed the 30-day grace period
+     * will be permanently deleted along with all associated data.
+     */
+    @Scheduled(cron = "0 0 0 * * ?")  // Every day at midnight
+    public void processScheduledOrgDeletionsScheduler() {
+        try {
+            logger.info("Process scheduled org deletions scheduler started at " + LocalDateTime.now());
+            RestTemplate restTemplate = new RestTemplate();
+            String uri = rootPath + Constants.organizationRoot + Constants.processScheduledDeletions;
+            MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+            HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+            ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<String>() {});
+            logger.info("Process scheduled org deletions scheduler completed at " + LocalDateTime.now() + " with response " + response);
+        } catch (Exception e) {
+            logger.error(LocalDateTime.now() + ". Caught error in processScheduledOrgDeletionsScheduler: " + e.getMessage(), e);
+        }
+    }
 }

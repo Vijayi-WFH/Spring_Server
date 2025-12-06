@@ -43,4 +43,7 @@ public class Constants {
 
     public static final String retryFailedAiRegistration = "/ai/retryFailedUserRegistration";
     public static final String expireLeaveApplicationsNotifications = "/expireLeaveApplicationsNotifications";
+
+    public static final String organizationRoot = "/organization";
+    public static final String processScheduledDeletions = "/processScheduledDeletions";
 }
