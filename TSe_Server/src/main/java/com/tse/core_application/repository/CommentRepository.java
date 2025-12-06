@@ -5,8 +5,10 @@ import java.util.*;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.tse.core_application.custom.model.*;
 import com.tse.core_application.model.Comment;
@@ -70,4 +72,9 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 	Integer findCommentsCountByOrgId(Long orgId);
 
 	Comment findByCommentLogId(Long commentLogId);
+
+	@Modifying
+	@Transactional
+	@Query("DELETE FROM Comment c WHERE c.task.taskId IN :taskIds")
+	void deleteAllByTaskIdIn(List<Long> taskIds);
 }

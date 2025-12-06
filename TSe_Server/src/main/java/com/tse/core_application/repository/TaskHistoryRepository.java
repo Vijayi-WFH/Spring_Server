@@ -4,8 +4,10 @@ import com.tse.core_application.model.TaskHistory;
 import com.tse.core_application.model.WorkFlowTaskStatus;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -41,4 +43,17 @@ public interface TaskHistoryRepository extends JpaRepository<TaskHistory,Long>, 
 
       @Query("SELECT t FROM TaskHistory t WHERE taskId = :taskId AND version = (SELECT MAX(version) FROM TaskHistory WHERE taskId = :taskId)")
       TaskHistory findByTaskIdAndLastVersion(Long taskId);
+
+      @Modifying
+      @Transactional
+      @Query("DELETE FROM TaskHistory th WHERE th.fkOrgId.orgId = :orgId")
+      void deleteByOrgId(Long orgId);
+
+      @Modifying
+      @Transactional
+      @Query("DELETE FROM TaskHistory th WHERE th.taskId IN :taskIds")
+      void deleteByTaskIdIn(List<Long> taskIds);
+
+      @Query("SELECT th.taskHistoryId FROM TaskHistory th WHERE th.taskId IN :taskIds")
+      List<Long> findAllTaskHistoryIdsByTaskIds(List<Long> taskIds);
 }

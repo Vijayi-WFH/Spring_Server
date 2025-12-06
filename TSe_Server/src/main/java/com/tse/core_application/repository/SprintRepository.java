@@ -5,8 +5,10 @@ import com.tse.core_application.custom.model.SprintTitleAndId;
 import com.tse.core_application.custom.model.SprintWithTeamCode;
 import com.tse.core_application.model.Sprint;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -112,4 +114,11 @@ public interface SprintRepository extends JpaRepository<Sprint, Long> {
             "WHERE s.sprintStatus IN :sprintStatusId ")
     List<Sprint> getCustomSprints(List<Integer> sprintStatusId);
 
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Sprint s WHERE s.entityTypeId = 5 AND s.entityId IN :teamIds")
+    void deleteAllByTeamIdIn(List<Long> teamIds);
+
+    @Query("SELECT s.sprintId FROM Sprint s WHERE s.entityTypeId = 5 AND s.entityId IN :teamIds")
+    List<Long> findAllSprintIdsByTeamIds(List<Long> teamIds);
 }

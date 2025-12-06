@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -66,4 +67,12 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
                            @Param("removedApproverAccountIds") List<Long> removedApproverAccountIds,
                            @Param("statusIds") List<Short> statusIds,
                            @Param("newApproverAccountId") Long newApproverAccountId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM LeaveApplication la WHERE la.accountId IN :accountIds")
+    void deleteAllByAccountIdIn(List<Long> accountIds);
+
+    @Query("SELECT la.leaveApplicationId FROM LeaveApplication la WHERE la.accountId IN :accountIds")
+    List<Long> findAllLeaveApplicationIdsByAccountIds(List<Long> accountIds);
 }

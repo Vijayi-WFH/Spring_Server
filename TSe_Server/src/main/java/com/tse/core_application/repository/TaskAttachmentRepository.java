@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -47,5 +48,10 @@ public interface TaskAttachmentRepository extends JpaRepository<TaskAttachment, 
             "FROM TaskAttachment t " +
             "WHERE t.comment.commentLogId IN :commentLogIds")
     List<TaskAttachmentMetaInfo> findAllAttachmentsByCommentLogIds(@Param("commentLogIds") List<Long> commentLogIds);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM TaskAttachment ta WHERE ta.taskId IN :taskIds")
+    void deleteByTaskIdIn(List<Long> taskIds);
 
 }

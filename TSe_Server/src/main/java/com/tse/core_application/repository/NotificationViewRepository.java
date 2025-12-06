@@ -6,6 +6,7 @@ import com.tse.core_application.model.UserAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
 import java.util.List;
@@ -49,4 +50,9 @@ public interface NotificationViewRepository extends JpaRepository<NotificationVi
 //    @Transactional
     @Query("delete from NotificationView n where n.notificationId = :notification")
     void removeByNotificationId(Notification notification);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM NotificationView nv WHERE nv.accountId IN (SELECT ua FROM UserAccount ua WHERE ua.accountId IN :accountIds)")
+    void deleteByAccountIdIn(List<Long> accountIds);
 }

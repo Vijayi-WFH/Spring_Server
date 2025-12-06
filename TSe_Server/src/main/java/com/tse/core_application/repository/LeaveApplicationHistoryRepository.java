@@ -2,9 +2,11 @@ package com.tse.core_application.repository;
 
 import com.tse.core_application.model.LeaveApplicationHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -66,4 +68,9 @@ public interface LeaveApplicationHistoryRepository extends JpaRepository<LeaveAp
     List<LeaveApplicationHistory> findByDateRange(
             @Param("fromDate") LocalDate fromDate,
             @Param("toDate") LocalDate toDate);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM LeaveApplicationHistory lah WHERE lah.accountId IN :accountIds")
+    void deleteByAccountIdIn(List<Long> accountIds);
 }

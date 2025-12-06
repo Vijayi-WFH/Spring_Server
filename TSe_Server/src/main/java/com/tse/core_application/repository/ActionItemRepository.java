@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -22,4 +23,9 @@ public interface ActionItemRepository extends JpaRepository<ActionItem, Long> {
 
     @Query("SELECT a FROM ActionItem a WHERE a.meeting.meetingId IN :meetingIds AND (a.isDeleted is null or a.isDeleted = :isDeleted)")
     List<ActionItem> findActionsByMeetingIdInAndIsDeleted(List<Long> meetingIds, boolean isDeleted);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM ActionItem ai WHERE ai.meeting.meetingId IN :meetingIds")
+    void deleteByMeetingIdIn(List<Long> meetingIds);
 }

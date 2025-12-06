@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -83,4 +84,9 @@ public interface TimeSheetRepository extends JpaRepository<TimeSheet, Long> {
     @Query(" UPDATE TimeSheet t set t.earnedTime = 0, t.newEffort = 0 " +
             "WHERE t.entityTypeId =:entityTypeId and t.entityId = :entityId and t.accountId IN :accountIds")
     void updateTimesheetEffortToZeroForMeetingOnRemoving(@Param("entityTypeId") Integer entityTypeId, @Param("entityId") Long entityId, @Param("accountIds") List<Long> accountIds );
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM TimeSheet t WHERE t.orgId = :orgId")
+    void deleteAllByOrgId(Long orgId);
 }

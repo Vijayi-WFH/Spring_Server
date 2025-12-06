@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.util.List;
@@ -23,6 +24,9 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
             "AND a.createdDateTime < :cutoff")
     int updateIsDeletedTrueWhereCreatedDateTimeOlderThan(@Param("cutoff") Timestamp cutoff);
 
-
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Alert a WHERE a.orgId = :orgId")
+    void deleteByOrgId(Long orgId);
 
 }

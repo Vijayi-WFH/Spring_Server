@@ -316,4 +316,142 @@ public class EmailService implements IEMailService {
         return templateEngine.process("declinedInviteEmailTemplate", context);
     }
 
+    public void sendOrgDeletionRequestedEmail(String toEmail, String organizationName, java.sql.Timestamp scheduledDeletionDate, int gracePeriodDays) {
+        try {
+            String emailContent = createBodyForOrgDeletionRequestedEmail(organizationName, scheduledDeletionDate, gracePeriodDays);
+
+            MimeMessage mimeMessage = emailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+            helper.setTo(toEmail);
+            helper.setSubject("Organization Deletion Request - " + organizationName);
+            helper.setFrom(username);
+            helper.setText(emailContent, true);
+            helper.setBcc(adminEmail);
+
+            emailSender.send(mimeMessage);
+            logger.info("Org deletion requested email sent to: {}", toEmail);
+        } catch (Exception e) {
+            logger.error("Failed to send org deletion requested email to: {}", toEmail, e);
+            ThreadContext.clearMap();
+        }
+    }
+
+    private String createBodyForOrgDeletionRequestedEmail(String organizationName, java.sql.Timestamp scheduledDeletionDate, int gracePeriodDays) {
+        Context context = new Context();
+        context.setVariable("organizationName", organizationName);
+        context.setVariable("scheduledDeletionDate", scheduledDeletionDate.toLocalDateTime().toLocalDate().toString());
+        context.setVariable("gracePeriodDays", gracePeriodDays);
+        context.setVariable("envIndicator", getEnvIndicator());
+
+        return templateEngine.process("orgDeletionRequestedTemplate", context);
+    }
+
+    public void sendOrgDeletionReversedEmail(String toEmail, String organizationName) {
+        try {
+            String emailContent = createBodyForOrgDeletionReversedEmail(organizationName);
+
+            MimeMessage mimeMessage = emailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+            helper.setTo(toEmail);
+            helper.setSubject("Organization Deletion Reversed - " + organizationName);
+            helper.setFrom(username);
+            helper.setText(emailContent, true);
+            helper.setBcc(adminEmail);
+
+            emailSender.send(mimeMessage);
+            logger.info("Org deletion reversed email sent to: {}", toEmail);
+        } catch (Exception e) {
+            logger.error("Failed to send org deletion reversed email to: {}", toEmail, e);
+            ThreadContext.clearMap();
+        }
+    }
+
+    private String createBodyForOrgDeletionReversedEmail(String organizationName) {
+        Context context = new Context();
+        context.setVariable("organizationName", organizationName);
+        context.setVariable("envIndicator", getEnvIndicator());
+
+        return templateEngine.process("orgDeletionReversedTemplate", context);
+    }
+
+    public void sendOrgDeletionCompletedEmail(String toEmail, String organizationName, com.tse.core_application.model.DeletedOrganizationStats stats) {
+        try {
+            String emailContent = createBodyForOrgDeletionCompletedEmail(organizationName, stats);
+
+            MimeMessage mimeMessage = emailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+            helper.setTo(toEmail);
+            helper.setSubject("Organization Deletion Completed - " + organizationName);
+            helper.setFrom(username);
+            helper.setText(emailContent, true);
+            helper.setBcc(adminEmail);
+
+            emailSender.send(mimeMessage);
+            logger.info("Org deletion completed email sent to: {}", toEmail);
+        } catch (Exception e) {
+            logger.error("Failed to send org deletion completed email to: {}", toEmail, e);
+            ThreadContext.clearMap();
+        }
+    }
+
+    private String createBodyForOrgDeletionCompletedEmail(String organizationName, com.tse.core_application.model.DeletedOrganizationStats stats) {
+        Context context = new Context();
+        context.setVariable("organizationName", organizationName);
+        context.setVariable("buCount", stats.getBuCount());
+        context.setVariable("projectCount", stats.getProjectCount());
+        context.setVariable("teamCount", stats.getTeamCount());
+        context.setVariable("totalUserCount", stats.getTotalUserCount());
+        context.setVariable("activeUserCount", stats.getActiveUserCount());
+        context.setVariable("inactiveUserCount", stats.getInactiveUserCount());
+        context.setVariable("taskCount", stats.getTaskCount());
+        context.setVariable("deletedProjectsCount", stats.getDeletedProjectsCount());
+        context.setVariable("deletedTeamsCount", stats.getDeletedTeamsCount());
+        context.setVariable("envIndicator", getEnvIndicator());
+
+        return templateEngine.process("orgDeletionCompletedTemplate", context);
+    }
+
+    public void sendOrgDeletionFailedEmail(String toEmail, Long orgId, String organizationName, String errorMessage) {
+        try {
+            String emailContent = createBodyForOrgDeletionFailedEmail(orgId, organizationName, errorMessage);
+
+            MimeMessage mimeMessage = emailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+            helper.setTo(toEmail);
+            helper.setSubject("ALERT: Organization Deletion Failed - " + organizationName);
+            helper.setFrom(username);
+            helper.setText(emailContent, true);
+
+            emailSender.send(mimeMessage);
+            logger.info("Org deletion failed email sent to: {}", toEmail);
+        } catch (Exception e) {
+            logger.error("Failed to send org deletion failed email to: {}", toEmail, e);
+            ThreadContext.clearMap();
+        }
+    }
+
+    private String createBodyForOrgDeletionFailedEmail(Long orgId, String organizationName, String errorMessage) {
+        Context context = new Context();
+        context.setVariable("orgId", orgId);
+        context.setVariable("organizationName", organizationName);
+        context.setVariable("errorMessage", errorMessage);
+        context.setVariable("timestamp", java.time.LocalDateTime.now().toString());
+        context.setVariable("envIndicator", getEnvIndicator());
+
+        return templateEngine.process("orgDeletionFailedTemplate", context);
+    }
+
+    private String getEnvIndicator() {
+        if (Objects.equals(com.tse.core_application.model.Constants.Environment.PRE_PROD.getTypeId(), environment)) {
+            return "[Environment: Pre-Prod]";
+        } else if (Objects.equals(com.tse.core_application.model.Constants.Environment.QA.getTypeId(), environment)) {
+            return "[Environment: QA]";
+        }
+        return null;
+    }
+
 }

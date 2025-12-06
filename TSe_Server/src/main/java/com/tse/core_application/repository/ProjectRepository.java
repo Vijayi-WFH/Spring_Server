@@ -91,4 +91,12 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     @Query("SELECT DISTINCT p.projectId FROM Project p where p.buId In :buIdList And (p.isDeleted = false Or p.isDeleted is null) and p.isDisabled = false")
     List<Long> findProjectIdsByBuIdIn(List<Long> buIdList);
+
+    @Query("SELECT p.projectId FROM Project p WHERE p.orgId = :orgId")
+    List<Long> findAllProjectIdsByOrgId(Long orgId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Project p WHERE p.orgId = :orgId")
+    void deleteAllByOrgId(Long orgId);
 }

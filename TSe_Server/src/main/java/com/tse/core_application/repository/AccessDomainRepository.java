@@ -401,4 +401,19 @@ public interface AccessDomainRepository extends JpaRepository<AccessDomain, Long
             @Param("orgId") Long orgId,
             @Param("orgAdminRoleIds") List<Integer> orgAdminRoleIds
     );
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM AccessDomain a WHERE a.entityTypeId = :entityTypeId AND a.entityId = :entityId")
+    void deleteByEntityTypeIdAndEntityId(@Param("entityTypeId") Integer entityTypeId, @Param("entityId") Long entityId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM AccessDomain a WHERE a.entityTypeId = :entityTypeId AND a.entityId IN :entityIds")
+    void deleteByEntityTypeIdAndEntityIdIn(@Param("entityTypeId") Integer entityTypeId, @Param("entityIds") List<Long> entityIds);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM AccessDomain a WHERE a.accountId IN :accountIds")
+    void deleteByAccountIdIn(@Param("accountIds") List<Long> accountIds);
 }

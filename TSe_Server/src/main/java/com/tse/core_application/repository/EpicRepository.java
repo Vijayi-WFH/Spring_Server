@@ -2,8 +2,10 @@ package com.tse.core_application.repository;
 
 import com.tse.core_application.model.Epic;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -31,4 +33,22 @@ public interface EpicRepository extends JpaRepository<Epic, Long> {
     List<Epic> findByFkProjectIdProjectId(Long projectId);
 
     List<Epic> findByfkOrgIdOrgId(Long orgId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM tse.epic e WHERE EXISTS (SELECT 1 FROM unnest(string_to_array(e.team_id_list, ',')) AS team_id WHERE team_id::bigint IN :teamIds)", nativeQuery = true)
+    void deleteAllByTeamIdIn(List<Long> teamIds);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Epic e WHERE e.fkOrgId.orgId = :orgId")
+    void deleteByOrgId(Long orgId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Epic e WHERE e.fkProjectId.projectId IN :projectIds")
+    void deleteByProjectIdIn(List<Long> projectIds);
+
+    @Query(value = "SELECT DISTINCT e.epic_id FROM tse.epic e WHERE EXISTS (SELECT 1 FROM unnest(string_to_array(e.team_id_list, ',')) AS team_id WHERE team_id::bigint IN :teamIds)", nativeQuery = true)
+    List<Long> findAllEpicIdsByTeamIds(List<Long> teamIds);
 }

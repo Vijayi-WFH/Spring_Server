@@ -88,4 +88,9 @@ public interface UserFeatureAccessRepository extends JpaRepository<UserFeaturesA
     @Query(value = "UPDATE tse.user_features_access SET is_deleted = true WHERE org_id = :orgId AND user_account_id = :accountId", nativeQuery = true)
     void updateIsDeletedByOrgIdAndAccountId(@Param("orgId") Long orgId,
                                             @Param("accountId") Long accountId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM UserFeaturesAccess ufa WHERE ufa.orgId = :orgId")
+    void deleteByOrgId(Long orgId);
 }

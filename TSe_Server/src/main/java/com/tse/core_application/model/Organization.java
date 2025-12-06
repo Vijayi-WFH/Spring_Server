@@ -74,7 +74,23 @@ public class Organization {
 
 	@Column(name = "on_trial")
 	private Boolean onTrial;
-	
+
+	@Column(name = "is_deletion_requested")
+	private Boolean isDeletionRequested = false;
+
+	@Column(name = "deletion_requested_at")
+	private Timestamp deletionRequestedAt;
+
+	@Column(name = "deletion_requested_by_account_id")
+	private Long deletionRequestedByAccountId;
+
+	@Column(name = "deletion_reason")
+	@Convert(converter = DataEncryptionConverter.class)
+	private String deletionReason;
+
+	@Column(name = "scheduled_deletion_date")
+	private Timestamp scheduledDeletionDate;
+
 	public Organization getOrgFromRegistrationReq(RegistrationRequest req) {
 		this.setOrganizationName(req.getOrganizationName());
 		this.setOrganizationDisplayName(req.getOrganizationName());

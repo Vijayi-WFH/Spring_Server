@@ -67,6 +67,9 @@ public class UserAccount {
 
     private Long deactivatedByAccountId;
 
+    @Column(name = "is_inactivated_on_org_deletion")
+    private Boolean isInactivatedOnOrgDeletion = false;
+
     public UserAccount getUserAccountFromRegistrationReq(RegistrationRequest request, Long orgId, User user) {
         this.setFkUserId(user);
         this.setOrgId(orgId);

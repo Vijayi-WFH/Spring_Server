@@ -4,9 +4,11 @@ import com.tse.core_application.dto.label.EntityTypeLabelResponse;
 import com.tse.core_application.dto.label.LabelResponse;
 import com.tse.core_application.model.Label;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -24,6 +26,11 @@ public interface LabelRepository extends JpaRepository<Label, Long> {
             @Param("entityTypeId") Integer entityTypeId,
             @Param("entityIdList") List<Long> entityIdList
     );
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Label l WHERE l.entityTypeId = :entityTypeId AND l.entityId IN :entityIds")
+    void deleteByEntityTypeIdAndEntityIdIn(Integer entityTypeId, List<Long> entityIds);
 
 }
 

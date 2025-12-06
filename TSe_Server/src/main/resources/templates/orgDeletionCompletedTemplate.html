@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Organization Deletion Completed</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #6c757d;">Organization Deletion Completed</h2>
+
+    <p>Dear Former Organization Administrator,</p>
+
+    <p>This is to confirm that organization <strong th:text="${organizationName}">Organization Name</strong> and all its associated data have been permanently deleted from our system.</p>
+
+    <div style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #6c757d;">Deletion Summary</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #dee2e6;">Business Units</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #dee2e6; text-align: right;" th:text="${buCount}">0</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #dee2e6;">Projects</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #dee2e6; text-align: right;" th:text="${projectCount}">0</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #dee2e6;">Teams</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #dee2e6; text-align: right;" th:text="${teamCount}">0</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #dee2e6;">Total Users (Active | Inactive)</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #dee2e6; text-align: right;" th:text="${totalUserCount} + ' (' + ${activeUserCount} + ' | ' + ${inactiveUserCount} + ')'">0 (0 | 0)</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #dee2e6;">Tasks</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #dee2e6; text-align: right;" th:text="${taskCount}">0</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #dee2e6;">Deleted Projects</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #dee2e6; text-align: right;" th:text="${deletedProjectsCount}">0</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0;">Deleted Teams</td>
+                <td style="padding: 8px 0; text-align: right;" th:text="${deletedTeamsCount}">0</td>
+            </tr>
+        </table>
+    </div>
+
+    <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #856404;">Please Note</h3>
+        <p style="margin-bottom: 0;">This action is irreversible. All organization data has been permanently removed from our servers. A summary has been retained for compliance and audit purposes.</p>
+    </div>
+
+    <p>Thank you for using our services. If you wish to create a new organization in the future, you're welcome to register again.</p>
+
+    <p th:if="${envIndicator != null}" th:text="${envIndicator}" style="color: gray; font-style: italic;"></p>
+
+    <p>Regards,<br/>Vijayi WFH Technologies Private Limited</p>
+</div>
+</body>
+</html>

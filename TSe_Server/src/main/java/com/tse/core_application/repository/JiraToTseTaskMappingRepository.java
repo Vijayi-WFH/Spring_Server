@@ -2,8 +2,10 @@ package com.tse.core_application.repository;
 
 import com.tse.core_application.model.JiraToTseTaskMapping;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -12,4 +14,9 @@ public interface JiraToTseTaskMappingRepository extends JpaRepository<JiraToTseT
 
     @Query("SELECT DISTINCT jt.issueId FROM JiraToTseTaskMapping jt WHERE jt.teamId = :teamId")
     List<Long> findIssueIdByTeamId(Long teamId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM JiraToTseTaskMapping jttm WHERE jttm.orgId = :orgId")
+    void deleteByOrgId(Long orgId);
 }

@@ -314,4 +314,12 @@ public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificat
     @Query("SELECT new com.tse.core_application.dto.meeting.WorkItemProgressDetailsDto(t.taskId, t.taskNumber, t.taskTypeId, t.fkAccountIdAssigned.accountId, " +
             "t.fkAccountIdAssigned.email, t.userPerceivedRemainingTimeForCompletion, t.taskProgressSystem, t.fkWorkflowTaskStatus.workflowTaskStatus) from Task t where taskId IN :taskIds ")
     List<WorkItemProgressDetailsDto> findWorkItemProgressByTaskIdIn(@Param("taskIds") List<Long> taskIds);
+
+    @Query("SELECT t.taskId FROM Task t WHERE t.fkOrgId.orgId = :orgId")
+    List<Long> findAllTaskIdsByOrgId(@Param("orgId") Long orgId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Task t WHERE t.fkOrgId.orgId = :orgId")
+    void deleteAllByOrgId(@Param("orgId") Long orgId);
 }
